@@ -1,0 +1,23 @@
+{
+  "name": "itable-tree",
+  "homepage": "https://github.com/kyofight/itable-tree",
+  "authors": [
+    "kyo <kyofight@gmail.com>"
+  ],
+  "description": "Smart Table Tree",
+  "moduleType": [],
+  "keywords": [
+    "Table",
+    "Tree",
+    "Infinity",
+    "Scroll"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
