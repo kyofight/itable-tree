@@ -1,10 +1,11 @@
 'use strict';
 
 (function () {
-    angular.module('iTableTree').directive('iTableTree', iTableTree);
+    angular.module('iTableTree').directive('iTableTree',
+        ['$compile', '$http', '$interval', '$rootScope', '$timeout', '$window', 'UtilService', iTableTree]);
 
-    function iTableTree ($compile, $http, $interval, $rootScope, $timeout, $window, UtilService) {
-        
+    function iTableTree($compile, $http, $interval, $rootScope, $timeout, $window, UtilService) {
+
         return {
             restrict: 'E',
             replace: true,
@@ -14,22 +15,27 @@
                 options: '=',
                 icons: '='
             },
-            link: function (scope, element, attrs) {
+            link: function ($scope, element, attrs) {
                 /**
                  *
                  * @type {Array}
                  */
-                scope.treeRows = [];
+                $scope.treeRows = [];
+
                 /**
-                 *
+                 * ****************** options ******************
                  */
-                scope.options = angular.isObject(scope.options) ? scope.options : {};
+
+                /**
+                 * @type {Object}
+                 */
+                $scope.options = angular.isObject($scope.options) ? $scope.options : {};
 
                 /**
                  *
-                 * @type {{itemsLabel: string, expandLevel: number, expandingProperty: string, label: string}}
+                 * @type {{itemsLabel: string, expandLevel: number, expandingProperty: string, label: string, cellWidth: number, cellHeight: number, treeContainer: {selector: string, minWidth: number}}}
                  */
-                scope.defaultOptions = {
+                $scope.defaultOptions = {
                     /**
                      * children property name for the treeData
                      */
@@ -38,71 +44,128 @@
                      * default expand all nodes to a certain level
                      */
                     expandLevel: 0,
+                    /**
+                     * the property name used in expanding column
+                     */
                     expandingProperty: 'name',
+                    /**
+                     * the property name for displaying the branch label
+                     */
                     label: 'name',
+                    /**
+                     * default table cell width
+                     */
                     cellWidth: 120,
-                    cellHeight: 30
+                    /**
+                     * default table cell height
+                     */
+                    cellHeight: 30,
+                    /**
+                     * the tree table container
+                     */
+                    treeContainer: {
+                        width: 500,
+                        selector: '',
+                        minWidth: 300
+                    }
                 };
-
 
                 /**
                  * setting default options
                  */
-                angular.forEach(scope.defaultOptions, function (val, key) {
-                    if (typeof scope.options[key] === 'undefined') {
-                        scope.options[key] = val;
+                angular.forEach($scope.defaultOptions, function (val, key) {
+                    if (typeof $scope.options[key] === 'undefined') {
+                        $scope.options[key] = val;
                     }
                 });
 
-                //icons default
-                scope.defaultIcons = {
-                    iconCollapse : 'fa fa-plus',
+                /**
+                 * ****************** icons ******************
+                 */
+
+                /**
+                 * default icons
+                 */
+                $scope.defaultIcons = {
+                    iconCollapse: 'fa fa-plus',
                     iconExpand: 'fa fa-minus'
-                }
+                };
 
                 /**
                  * setting default icons
                  */
-                angular.forEach(scope.defaultIcons, function (val, key) {
-                    if (typeof scope.icons[key] === 'undefined') {
-                        scope.icons[key] = val;
+                angular.forEach($scope.defaultIcons, function (val, key) {
+                    if (typeof $scope.icons[key] === 'undefined') {
+                        $scope.icons[key] = val;
                     }
                 });
 
 
                 /**
+                 * ****************** callbacks ******************
+                 */
+
+                /**
                  *
                  */
-                scope.callbacks = angular.isObject(scope.callbacks) ? scope.callbacks : {};
+                $scope.callbacks = angular.isObject($scope.callbacks) ? $scope.callbacks : {};
 
+
+                /**
+                 * ****************** common scope variables ******************
+                 */
 
                 /**
                  *
                  * @type {{}}
                  */
-                scope.timers = {};
-                scope.UpdateCount = 0;
-                scope.previousUpdateCount = null;
+                $scope.timers = {};
+                $scope.UpdateCount = 0;
+                $scope.previousUpdateCount = null;
+                $scope.intervals = {};
 
 
+                /**
+                 * ****************** tree container width settings ******************
+                 */
+                $scope.containerWidth = parseFloat($scope.treeContainer.width);
+                $scope.scrollbarWidth = UtilService.getScrollBarWidth();
+                $scope.previousContainerWidth = 0;
+                $scope.isFullWidth = true;
+                if (!isFinite($scope.containerWidth)) {
+                    $scope.intervals.setCellWidth = $interval(function () {
+                        $scope.containerWidth = angular.element($scope.treeContainer.selector).width();
+                        if ($scope.previousContainerWidth !== $scope.containerWidth) {
+                            UtilService.setContainerWidth($scope);
+                            UtilService.setCellWidth($scope);
+                        }
+                    }, 500);
+                } else {
+                    UtilService.setContainerWidth($scope);
+                    UtilService.setCellWidth($scope);
+                }
+
+                /**
+                 * ****************** tree init related functions ******************
+                 */
 
                 /**
                  * iterate each branch of the data tree
                  * @param callback
                  */
-                scope.forEachBranch = function (callback) {
+                $scope.forEachBranch = function (callback) {
                     (function walkTree(data, parent, level, visible) {
                         angular.forEach(data, function (branch) {
                             callback(branch, parent, level, visible);
-                            if (!angular.isArray(data[scope.options.itemsLabel])) {
-                                data[scope.options.itemsLabel] = [];
-                            } else if (data[scope.options.itemsLabel].length) {
-                                angular.forEach(data[scope.options.itemsLabel], function () {
-                                    walkTree(data[scope.options.itemsLabel], data, level + 1, (visible || !parent) && branch.expanded);
+                            if (!angular.isArray(data[$scope.options.itemsLabel])) {
+                                data[$scope.options.itemsLabel] = [];
+                            } else if (data[$scope.options.itemsLabel].length) {
+                                angular.forEach(data[$scope.options.itemsLabel], function () {
+                                    walkTree(data[$scope.options.itemsLabel], data, level + 1, (visible || !parent) && branch.expanded);
                                 });
                             }
                         });
-                    })(scope.treeData, null, 0, true);
+                    })($scope.treeData, null, 0, true);
                 };
 
 
@@ -110,48 +173,48 @@
                  * set the branch
                  * @param branch
                  */
-                scope.initBranch = function (branch) {
-                    if (scope.callbacks.initBranch) {
-                        scope.callbacks.initBranch(branch);
+                $scope.initBranch = function (branch) {
+                    if ($scope.callbacks.initBranch) {
+                        $scope.callbacks.initBranch(branch);
                     }
                 };
 
 
-                scope.init = function () {
-                    scope.treeRows = [];
+                $scope.init = function () {
+                    $scope.treeRows = [];
 
-                    scope.forEachBranch(function (branch, parent, level, visible) {
+                    $scope.forEachBranch(function (branch, parent, level, visible) {
                         branch.uid = UtilService.generateUUID();
                         branch.pid = parent ? parent.uid : '';
 
                         branch.level = level;
 
                         if (typeof branch.expanded === 'undefined') {
-                            branch.expanded = branch.level < scope.options.expandLevel;
+                            branch.expanded = branch.level < $scope.options.expandLevel;
                         }
 
-                        if (!scope.callbacks.treeFilter) {
+                        if (!$scope.callbacks.treeFilter) {
                             branch.visible_ = true;
                             branch._visible_ = !parent ? true : visible;
                         }
 
 
-                        scope.initBranch(branch);
+                        $scope.initBranch(branch);
 
-                        scope.treeRows.push({
+                        $scope.treeRows.push({
                             level: level,
                             branch: branch,
                             label: function () {
-                                return this.branch[scope.options.label];
+                                return this.branch[$scope.options.label];
                             },
                             treeIcon: function () {
-                                return this.branch.expanded ? scope.icons.iconCollapse : scope.icons.iconExpand;
+                                return this.branch.expanded ? $scope.icons.iconCollapse : $scope.icons.iconExpand;
                             }
                         });
                     });
 
-                    if (scope.callbacks.treeFilter) {
-                        scope.callbacks.treeFilter(scope.treeData);
+                    if ($scope.callbacks.treeFilter) {
+                        $scope.callbacks.treeFilter($scope.treeData);
                     }
 
 
@@ -160,8 +223,6 @@
         }
     }
 
-
-    iTableTree.$inject = ['$compile', '$http', '$interval', '$rootScope', '$timeout', '$window', 'UtilService'];
 })();
 
 
@@ -228,29 +289,28 @@ eConstruct.ecTreeTable.directive =
                 var resizingCol, resizeStartX, _colDefs, _firstRow, error, expandingProperty, expandLevel, forAllAncestors, forEachBranch, getParent, n, selectBranch, tree;
 
                 /** @expose */
-                scope.isFullWidth = true;
+                $scope.isFullWidth = true;
 
-                scope.reduceColWidth = 0;
+                $scope.reduceColWidth = 0;
 
-                scope.options['resizePivotColIndex'] = scope.options['resizePivotColIndex'] === undefined ? 0 : scope.options['resizePivotColIndex'];
-
+                $scope.options['resizePivotColIndex'] = $scope.options['resizePivotColIndex'] === undefined ? 0 : $scope.options['resizePivotColIndex'];
 
 
                 var viewpointElement;
                 var setViewport = function (scroll) {
-                    if (scroll && !scope.isListComplete && angular.element('#tree-grid-' + scope['$id'] + ' .table-grid-body .table-grid-viewpoint').height() <= (viewpointElement.scrollTop() + viewpointElement.height() + 30)) {
-                        if (scope.loadMore() && !scope.loadMoreSign) {
-                            (scope.loadMore())(tree);
+                    if (scroll && !$scope.isListComplete && angular.element('#tree-grid-' + scope['$id'] + ' .table-grid-body .table-grid-viewpoint').height() <= (viewpointElement.scrollTop() + viewpointElement.height() + 30)) {
+                        if ($scope.loadMore() && !$scope.loadMoreSign) {
+                            ($scope.loadMore())(tree);
                         }
                     } else if (viewpointElement) {
-                        viewportTop = parseInt(viewpointElement.scrollTop() / scope.defaultCellHeight) - 10;
+                        viewportTop = parseInt(viewpointElement.scrollTop() / $scope.defaultCellHeight) - 10;
                         viewportTop = viewportTop < 0 ? 0 : viewportTop;
-                        viewportBottom = parseInt((viewpointElement.scrollTop() + viewpointElement.height()) / scope.defaultCellHeight) + 10;
+                        viewportBottom = parseInt((viewpointElement.scrollTop() + viewpointElement.height()) / $scope.defaultCellHeight) + 10;
                     }
                 };
 
                 var scrollbarWidth = getScrollBarWidth();
-                var isPercentageWidth = scope.options && scope.options['layoutUnit'] && scope.options['layoutUnit'] === '%';
+                var isPercentageWidth = $scope.options && $scope.options['layoutUnit'] && $scope.options['layoutUnit'] === '%';
                 var intervalUpdate = null;
                 if (isPercentageWidth) {
                     intervalUpdate = $interval(function () {
@@ -258,157 +318,157 @@ eConstruct.ecTreeTable.directive =
                     }, 500);
                 }
                 /** @expose */
-                scope.isSelectedAll = function () {
-                    if (!scope.multiSelect) {
+                $scope.isSelectedAll = function () {
+                    if (!$scope.multiSelect) {
                         return false;
                     }
                     var selected = 0;
-                    _.each(scope.treeRows, function (row) {
+                    _.each($scope.treeRows, function (row) {
                         if (row && row['branch']['selected']) {
                             selected++;
                         }
                     });
-                    var total = scope.treeRows ? scope.treeRows.length : 0;
+                    var total = $scope.treeRows ? $scope.treeRows.length : 0;
                     return selected === total;
                 };
                 /** @expose */
-                scope.toggleCheckboxes = function ($event) {
+                $scope.toggleCheckboxes = function ($event) {
                     var action = $event['target']['checked'];
-                    _.each(scope.treeRows, function (row) {
+                    _.each($scope.treeRows, function (row) {
                         if (row['branch']['selected'] !== action) {
-                            scope.userClicksBranch({}, row['branch'], {'isMultiple': true});
+                            $scope.userClicksBranch({}, row['branch'], {'isMultiple': true});
                         }
                     });
                 };
 
                 /** misc **/
                 /** @expose */
-                scope.scrollEnd = function () {
-                    if (scope.loadMore()) {
-                        (scope.loadMore())();
+                $scope.scrollEnd = function () {
+                    if ($scope.loadMore()) {
+                        ($scope.loadMore())();
                     }
                 };
 
                 /** @expose */
-                scope.setSwitch = function (branch) {
-                    if (scope.rowSwitch()) {
-                        (scope.rowSwitch())(branch);
+                $scope.setSwitch = function (branch) {
+                    if ($scope.rowSwitch()) {
+                        ($scope.rowSwitch())(branch);
                     }
                 };
 
 
                 /** @expose */
-                scope.setRow = function (branch) {
-                    if (scope.rowInit()) {
-                        (scope.rowInit())(branch);
+                $scope.setRow = function (branch) {
+                    if ($scope.rowInit()) {
+                        ($scope.rowInit())(branch);
                     }
                 };
 
                 /** @expose */
-                scope.onColResizeStart = function ($event, col) {
+                $scope.onColResizeStart = function ($event, col) {
                     resizingCol = col;
                     resizeStartX = $event['screenX'];
-                    $(document).mousemove(scope.onMouseMove);
-                    $(document).mouseup(scope.onMouseUp);
+                    $(document).mousemove($scope.onMouseMove);
+                    $(document).mouseup($scope.onMouseUp);
                     return false;
                 };
 
                 /** @expose */
-                scope.onMouseMove = function (event) {
+                $scope.onMouseMove = function (event) {
                     if (resizingCol) {
                         var resizedWidth = (event['screenX'] - resizeStartX);
                         resizeStartX = event['screenX'];
                         if (isPercentageWidth) {
                             setPercentageWidth(resizedWidth);
                         }
-                        if (!scope.$root.$$phase) {
-                            scope.$digest();
+                        if (!$scope.$root.$$phase) {
+                            $scope.$digest();
                         }
                     }
                     return false;
                 };
                 /** @expose */
-                scope.onMouseUp = function (event) {
-                    $(document).off('mousemove', scope.onMouseMove);
-                    $(document).off('mouseup', scope.onMouseUp);
+                $scope.onMouseUp = function (event) {
+                    $(document).off('mousemove', $scope.onMouseMove);
+                    $(document).off('mouseup', $scope.onMouseUp);
                     if (resizingCol) {
                         var resizedWidth = (event['screenX'] - resizeStartX);
                         if (isPercentageWidth) {
                             setPercentageWidth(resizedWidth);
                         }
                     }
-                    if (!scope.$root.$$phase) {
-                        scope.$digest();
+                    if (!$scope.$root.$$phase) {
+                        $scope.$digest();
                     }
                     resizingCol = null;
                     return false;
                 };
                 /** @expose */
-                scope.cellStyle = function (index, isLastCell, isHeaderCell) {
+                $scope.cellStyle = function (index, isLastCell, isHeaderCell) {
                     //reworked to save time to calculate cell style on 30/10/2015
                     if (index === 0) {
                         var left = 0;
-                        for (var i = 0; i < scope.colDefinitions.length; i++) {
+                        for (var i = 0; i < $scope.colDefinitions.length; i++) {
                             var style = {};
-                            style['width'] = scope.colDefinitions[i]['width'] ? scope.colDefinitions[i]['width'] + 'px' : (isPercentageWidth ? 0 : scope.defaultCellWidth) + 'px';
+                            style['width'] = $scope.colDefinitions[i]['width'] ? $scope.colDefinitions[i]['width'] + 'px' : (isPercentageWidth ? 0 : $scope.defaultCellWidth) + 'px';
                             style['cursor'] = resizingCol ? 'col-resize' : 'pointer';
-                            style['text-align'] = scope.colDefinitions[i]['align'] ? scope.colDefinitions[i]['align'] : (isHeaderCell ? 'center' : 'left');
+                            style['text-align'] = $scope.colDefinitions[i]['align'] ? $scope.colDefinitions[i]['align'] : (isHeaderCell ? 'center' : 'left');
 
                             if (isLastCell) {
                                 //style['border-right'] = 'none';
                             }
                             if (i > 0) {
-                                left += parseFloat(scope.colDefinitions[i-1]['width'] ? scope.colDefinitions[i-1]['width'] : (isPercentageWidth ? 0 : scope.defaultCellWidth));
+                                left += parseFloat($scope.colDefinitions[i - 1]['width'] ? $scope.colDefinitions[i - 1]['width'] : (isPercentageWidth ? 0 : $scope.defaultCellWidth));
                             }
                             style['left'] = left + 'px';
-                            scope.colDefinitions[i]['cellStyle'] = style;
+                            $scope.colDefinitions[i]['cellStyle'] = style;
                         }
                     }
 
-                    return scope.colDefinitions[index]['cellStyle'];
+                    return $scope.colDefinitions[index]['cellStyle'];
                 };
                 /** @expose */
-                scope.cellStyleInner = function (index) {
+                $scope.cellStyleInner = function (index) {
                     var style = {};
-                    style['width'] = scope.colDefinitions[index]['width'] ? (scope.colDefinitions[index]['width'] - 11) + 'px' : (isPercentageWidth ? 0 : scope.defaultCellWidth - 11) + 'px';
+                    style['width'] = $scope.colDefinitions[index]['width'] ? ($scope.colDefinitions[index]['width'] - 11) + 'px' : (isPercentageWidth ? 0 : $scope.defaultCellWidth - 11) + 'px';
                     style['cursor'] = resizingCol ? 'col-resize' : 'pointer';
                     style['display'] = 'block';
-                    style['text-align'] = scope.colDefinitions[index]['align'] ? scope.colDefinitions[index]['align'] : 'left';
+                    style['text-align'] = $scope.colDefinitions[index]['align'] ? $scope.colDefinitions[index]['align'] : 'left';
 
                     return style;
                 };
                 /** @expose */
-                scope.rowStyle = function (index) {
+                $scope.rowStyle = function (index) {
                     var style = {};
-                    style['top'] = (index * scope.defaultCellHeight) + 'px';
-                    style['height'] = scope.defaultCellHeight;
+                    style['top'] = (index * $scope.defaultCellHeight) + 'px';
+                    style['height'] = $scope.defaultCellHeight;
                     return style;
                 };
 
-                if (scope.rowClass() === undefined) {
-                    scope.rowClass = function (odd, selected) {
+                if ($scope.rowClass() === undefined) {
+                    $scope.rowClass = function (odd, selected) {
                         return (odd ? 'table-grid-row-odd' : 'table-grid-row-even') + (selected ? ' active' : '');
                     };
                 } else {
-                    scope.rowClass = scope.rowClass();
+                    $scope.rowClass = $scope.rowClass();
                 }
 
                 /** @expose */
-                scope.levelStyle = function (level) {
+                $scope.levelStyle = function (level) {
                     var style = {};
                     style['left'] = ((level - 1) * 20) + 'px';
                     return style;
                 };
 
                 /** @expose */
-                scope.preventDefault = function ($event) {
+                $scope.preventDefault = function ($event) {
                     $event.preventDefault();
                     $event.stopPropagation();
                 };
 
 
                 /** @expose */
-                scope.anyVisibleChildren = function (branch) {
+                $scope.anyVisibleChildren = function (branch) {
                     if (!branch[itemsLabel] || !branch[itemsLabel].length) {
                         branch['anyChildren'] = true;
                         return false;
@@ -442,19 +502,19 @@ eConstruct.ecTreeTable.directive =
 
                 expandLevel = parseInt(attrs['expandLevel'], 10);
 
-                if (!scope.rowTemplateUrl) {
+                if (!$scope.rowTemplateUrl) {
                     alert('no row template defined for the tree!');
                     return;
                 }
 
                 /** @expose */
-                scope.expandingProperty = '';
+                $scope.expandingProperty = '';
                 if (attrs.expandOn) {
-                    expandingProperty = scope.expandOn;
-                    scope.expandingProperty = scope.expandOn;
+                    expandingProperty = $scope.expandOn;
+                    $scope.expandingProperty = $scope.expandOn;
                 }
                 else {
-                    _firstRow = scope.treeData[0];
+                    _firstRow = $scope.treeData[0];
                     var _keys = Object.keys(_firstRow);
                     for (var i = 0, len = _keys.length; i < len; i++) {
                         if (typeof(_firstRow[_keys[i]]) === 'string') {
@@ -465,25 +525,25 @@ eConstruct.ecTreeTable.directive =
                     if (!expandingProperty) {
                         expandingProperty = _keys[0];
                     }
-                    scope.expandingProperty = expandingProperty;
+                    $scope.expandingProperty = expandingProperty;
                 }
 
                 /** @expose */
-                scope.colDefinitions = [];
+                $scope.colDefinitions = [];
                 if (!attrs.colDefs) {
                     _colDefs = [];
-                    _firstRow = scope.treeData[0];
+                    _firstRow = $scope.treeData[0];
                     var _unwantedColumn = [itemsLabel, 'level', 'expanded', expandingProperty];
                     for (var idx in _firstRow) {
                         if (_unwantedColumn.indexOf(idx) === -1) {
                             _colDefs.push({field: idx});
                         }
                     }
-                    scope.colDefinitions = _colDefs;
+                    $scope.colDefinitions = _colDefs;
                 }
                 else {
-                    scope.colDefinitions = scope.colDefs;
-                    _.each(scope.colDefs, function (col) {
+                    $scope.colDefinitions = $scope.colDefs;
+                    _.each($scope.colDefs, function (col) {
                         //default col min width is 30
                         col['minWidth'] = col['minWidth'] === undefined ? (col['width'] < 30 ? col['width'] : 30) : col['minWidth'];
                     });
@@ -504,7 +564,7 @@ eConstruct.ecTreeTable.directive =
                             return _results;
                         }
                     };
-                    _ref = scope.treeData;
+                    _ref = $scope.treeData;
                     _results = [];
                     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
                         rootBranch = _ref[_i];
@@ -513,10 +573,10 @@ eConstruct.ecTreeTable.directive =
                     return _results;
                 };
                 /** @expose */
-                scope.selectedBranches = scope.selectedBranches ? scope.selectedBranches : {};
+                $scope.selectedBranches = $scope.selectedBranches ? $scope.selectedBranches : {};
 
                 selectBranch = function (branch, data) {
-                    if (!branch || branch['disabled'] || scope.options['disableSelection']) {
+                    if (!branch || branch['disabled'] || $scope.options['disableSelection']) {
                         return;
                     }
 
@@ -528,19 +588,19 @@ eConstruct.ecTreeTable.directive =
                     if (data['isMultiple']) {
                         branch['selected'] = !branch['selected'];
                         if (!branch['selected']) {
-                            scope.selectedBranches[branch['uid']] = null;
+                            $scope.selectedBranches[branch['uid']] = null;
                         } else {
-                            scope.selectedBranches[branch['uid']] = branch;
+                            $scope.selectedBranches[branch['uid']] = branch;
                         }
                     } else {
-                        _.each(scope.selectedBranches, function (b) {
+                        _.each($scope.selectedBranches, function (b) {
                             if (b) {
                                 b['selected'] = false;
                             }
                         });
-                        scope.selectedBranches = {};
+                        $scope.selectedBranches = {};
                         branch['selected'] = true;
-                        scope.selectedBranches[branch['uid']] = branch;
+                        $scope.selectedBranches[branch['uid']] = branch;
                     }
 
                     if (branch['onSelect'] !== undefined) {
@@ -548,9 +608,9 @@ eConstruct.ecTreeTable.directive =
                             return branch['onSelect'](branch, data);
                         });
                     } else if (!data['silentSelect']) {
-                        if (scope.onSelect() !== undefined) {
+                        if ($scope.onSelect() !== undefined) {
                             return $timeout(function () {
-                                return (scope.onSelect())(branch, data);
+                                return ($scope.onSelect())(branch, data);
                             });
                         }
                     }
@@ -567,8 +627,8 @@ eConstruct.ecTreeTable.directive =
                 $(window).bind('keydown', keyCodeDown);
 
                 /** @expose */
-                scope.userClicksBranch = function ($event, branch, data) {
-                    $rootScope.$broadcast('tree.click.branch');
+                $scope.userClicksBranch = function ($event, branch, data) {
+                    $root$scope.$broadcast('tree.click.branch');
                     if (!branch) {
                         return;
                     }
@@ -577,7 +637,7 @@ eConstruct.ecTreeTable.directive =
                         $event.stopPropagation();
                     }
 
-                    var isMultiple = scope.multiSelect;
+                    var isMultiple = $scope.multiSelect;
 
                     //Firefox: 224
                     //Opera: 17
@@ -590,14 +650,14 @@ eConstruct.ecTreeTable.directive =
 
                     if ($event['ctrlKey'] || (isMac && (keyCode === 224 && isFirefox) || (keyCode === 17 && isOpera) ||
                         ((keyCode === 91 || keyCode === 93) && isWebKit))) {
-                        isMultiple = scope.allowMultiple;
+                        isMultiple = $scope.allowMultiple;
                     }
                     if ($event['shiftKey']) {
-                        isMultiple = scope.allowMultiple;
+                        isMultiple = $scope.allowMultiple;
                     } else {
                         //record last selected item, use pageY to determine if up or down
                         branch['pageY'] = $event['pageY'];
-                        scope.lastClickedBranch = branch;
+                        $scope.lastClickedBranch = branch;
                     }
 
                     data = data ? data : {};
@@ -605,32 +665,32 @@ eConstruct.ecTreeTable.directive =
 
                     if ($event['shiftKey']) {
                         var reset = function () {
-                            _.each(scope.selectedBranches, function (b) {
+                            _.each($scope.selectedBranches, function (b) {
                                 if (b) {
                                     b['selected'] = false;
                                 }
                             });
-                            scope.selectedBranches = {};
-                            if (scope.beforeShiftKey()) {
-                                (scope.beforeShiftKey())($event, branch, scope.lastClickedBranch);
+                            $scope.selectedBranches = {};
+                            if ($scope.beforeShiftKey()) {
+                                ($scope.beforeShiftKey())($event, branch, $scope.lastClickedBranch);
                             }
                         };
 
-                        if (!scope.lastClickedBranch) {
-                            scope.lastClickedBranch = tree.getFirstBranch();
-                            scope.lastClickedBranch['pageY'] = -1;
+                        if (!$scope.lastClickedBranch) {
+                            $scope.lastClickedBranch = tree.getFirstBranch();
+                            $scope.lastClickedBranch['pageY'] = -1;
                         }
-                        if (scope.lastClickedBranch) {
-                            var nextBranch = $event['pageY'] < scope.lastClickedBranch['pageY'] ? tree.getPrevBranch : tree.getNextBranch;
-                            var b = nextBranch(scope.lastClickedBranch);
-                            if (scope.lastClickedBranch['uid'] === branch['uid']) {
+                        if ($scope.lastClickedBranch) {
+                            var nextBranch = $event['pageY'] < $scope.lastClickedBranch['pageY'] ? tree.getPrevBranch : tree.getNextBranch;
+                            var b = nextBranch($scope.lastClickedBranch);
+                            if ($scope.lastClickedBranch['uid'] === branch['uid']) {
                                 reset();
                                 selectBranch(branch, data);
                             } else if (b) {
                                 reset();
                                 //select anchor
-                                if (!scope.lastClickedBranch['selected']) {
-                                    selectBranch(scope.lastClickedBranch, data);
+                                if (!$scope.lastClickedBranch['selected']) {
+                                    selectBranch($scope.lastClickedBranch, data);
                                 }
                                 while (b && b['uid'] !== branch['uid']) {
                                     selectBranch(b, data);
@@ -641,8 +701,8 @@ eConstruct.ecTreeTable.directive =
                                     selectBranch(branch, data);
                                 }
                             }
-                            if (scope.afterShiftKey()) {
-                                (scope.afterShiftKey())($event, branch, scope.lastClickedBranch);
+                            if ($scope.afterShiftKey()) {
+                                ($scope.afterShiftKey())($event, branch, $scope.lastClickedBranch);
                             }
                         }
                     } else {
@@ -672,18 +732,18 @@ eConstruct.ecTreeTable.directive =
                 };
 
                 /** @expose */
-                scope.treeRows = [];
+                $scope.treeRows = [];
 
-                if (!scope.treeData || !scope.treeData.length) {
-                    scope.treeData = [];
+                if (!$scope.treeData || !$scope.treeData.length) {
+                    $scope.treeData = [];
                 }
 
-                n = scope.treeData.length;
-                if (scope.treeControl === undefined || !angular.isObject(scope.treeControl)) {
-                    scope.treeControl = {};
+                n = $scope.treeData.length;
+                if ($scope.treeControl === undefined || !angular.isObject($scope.treeControl)) {
+                    $scope.treeControl = {};
                 }
 
-                tree = scope.treeControl;
+                tree = $scope.treeControl;
 
 
                 var forEachChild = function (b, callback) {
@@ -704,48 +764,48 @@ eConstruct.ecTreeTable.directive =
                     });
                 };
                 /** @expose */
-                scope.toggleExpansion = tree.toggleExpansion;
+                $scope.toggleExpansion = tree.toggleExpansion;
 
                 /** @expose */
                 tree.loading = function () {
-                    scope.isLoading = true;
+                    $scope.isLoading = true;
                 };
 
                 var loadingInterval = null;
                 /** @expose */
                 tree.inspectLoading = function () {
-                    scope.UpdateCount = 0;
-                    scope.previousUpdateCount = null;
-                    scope.isLoading = true;
+                    $scope.UpdateCount = 0;
+                    $scope.previousUpdateCount = null;
+                    $scope.isLoading = true;
 
                     loadingInterval = $interval(function () {
-                        if (scope.UpdateCount === scope.previousUpdateCount) {
-                            scope.isLoading = false;
-                            scope.isEmpty = scope.treeRows.length === 0;
+                        if ($scope.UpdateCount === $scope.previousUpdateCount) {
+                            $scope.isLoading = false;
+                            $scope.isEmpty = $scope.treeRows.length === 0;
                             $interval.cancel(loadingInterval);
                             //loadingInterval = null;
                             $timeout(function () {
-                                $rootScope.$broadcast('tree.grid.load.complete', scope.treeControl);
+                                $root$scope.$broadcast('tree.grid.load.complete', $scope.treeControl);
                                 viewpointElement = angular.element('#tree-grid-' + scope['$id'] + ' .table-grid-body');
-                                if (scope.treeFilter()) {
-                                    (scope.treeFilter())(scope.treeData, expandLevel);
+                                if ($scope.treeFilter()) {
+                                    ($scope.treeFilter())($scope.treeData, expandLevel);
                                 }
                             });
                         }
 
-                        scope.previousUpdateCount = scope.UpdateCount;
+                        $scope.previousUpdateCount = $scope.UpdateCount;
                     }, 100);
                 };
 
                 /** @expose */
                 tree.isAnyVisibleItmes = function () {
-                    return scope.treeRowsFiltered.length;
+                    return $scope.treeRowsFiltered.length;
                 };
 
                 /** @expose */
                 tree.applyFilter = function () {
-                    if (scope.treeFilter()) {
-                        (scope.treeFilter())(scope.treeData);
+                    if ($scope.treeFilter()) {
+                        ($scope.treeFilter())($scope.treeData);
                     }
                 };
 
@@ -755,12 +815,12 @@ eConstruct.ecTreeTable.directive =
                         (function (treeData) {
                             field(treeData);
                             tree.onTreeDataChange();
-                        })(scope.treeData);
+                        })($scope.treeData);
                     } else {
                         (function (treeData, field, reverseOrder) {
                             FolderService.sortTree(treeData, field, reverseOrder);
                             tree.onTreeDataChange();
-                        })(scope.treeData, field, reverseOrder);
+                        })($scope.treeData, field, reverseOrder);
                     }
                 };
 
@@ -794,9 +854,9 @@ eConstruct.ecTreeTable.directive =
                 };
                 /** @expose */
                 tree.getFirstBranch = function () {
-                    n = scope.treeData.length;
+                    n = $scope.treeData.length;
                     if (n > 0) {
-                        return scope.treeData[0];
+                        return $scope.treeData[0];
                     }
                 };
                 /** @expose */
@@ -807,7 +867,7 @@ eConstruct.ecTreeTable.directive =
                 };
                 /** @expose */
                 tree.getSelectedBranch = function () {
-                    return scope.selectedBranches;
+                    return $scope.selectedBranches;
                 };
                 /** @expose */
                 tree.getParentBranch = function (b) {
@@ -815,7 +875,7 @@ eConstruct.ecTreeTable.directive =
                 };
                 /** @expose */
                 tree.clicksBranch = function ($event, branch, data) {
-                    scope.userClicksBranch($event, branch, data);
+                    $scope.userClicksBranch($event, branch, data);
                 };
                 /** @expose */
                 tree.selectBranch = function (b, data) {
@@ -857,7 +917,7 @@ eConstruct.ecTreeTable.directive =
                         });
                     };
 
-                    findNode(scope.treeData);
+                    findNode($scope.treeData);
                     return foundNode;
                 };
 
@@ -905,10 +965,10 @@ eConstruct.ecTreeTable.directive =
                     };
 
                     if (!folderArr || !folderArr.length) {
-                        scope.treeData.push(newNode);
-                        FolderService.sortList(scope.treeData, sortKey, reverseOrder);
+                        $scope.treeData.push(newNode);
+                        FolderService.sortList($scope.treeData, sortKey, reverseOrder);
                     } else {
-                        findParentNode(scope.treeData, folderIndex);
+                        findParentNode($scope.treeData, folderIndex);
                         if (foundNode) {
                             tree.expandAllParents(foundNode);
                             var n = foundNode;
@@ -929,8 +989,8 @@ eConstruct.ecTreeTable.directive =
                         } else {
                             //no parent found, form new branch
                             var newList = FolderService.buildTreeFromList([newNode]);
-                            scope.treeData.push(newList[0]);
-                            FolderService.sortList(scope.treeData, sortKey, reverseOrder);
+                            $scope.treeData.push(newList[0]);
+                            FolderService.sortList($scope.treeData, sortKey, reverseOrder);
                         }
                     }
 
@@ -978,12 +1038,12 @@ eConstruct.ecTreeTable.directive =
                             }
                         });
                     };
-                    findNode(scope.treeData);
+                    findNode($scope.treeData);
 
                     if (foundNode) {
                         tree.deleteBranch(foundNode);
                         //also delete the selected nodes instance
-                        _.remove(scope.selectedBranches, function (branch) {
+                        _.remove($scope.selectedBranches, function (branch) {
                             return branch === foundNode;
                         });
 
@@ -1009,11 +1069,11 @@ eConstruct.ecTreeTable.directive =
                         });
                     };
 
-                    findNode(scope.treeData);
+                    findNode($scope.treeData);
 
                     if (foundNode) {
                         update(foundNode, function (sort) {
-                            var p = tree.getParentBranch(foundNode) || scope.treeData;
+                            var p = tree.getParentBranch(foundNode) || $scope.treeData;
                             while (p !== undefined) {
                                 if (!_.isFunction(sort)) {
                                     FolderService.sortList(p[itemsLabel] || p, sort);
@@ -1034,7 +1094,7 @@ eConstruct.ecTreeTable.directive =
                         parent['expanded'] = true;
                         trackUpdate();
                     } else {
-                        scope.treeData.push(newBranch);
+                        $scope.treeData.push(newBranch);
                     }
                     return newBranch;
                 };
@@ -1070,7 +1130,7 @@ eConstruct.ecTreeTable.directive =
                     if (p) {
                         siblings = p[itemsLabel];
                     } else {
-                        siblings = scope.treeData;
+                        siblings = $scope.treeData;
                     }
                     return siblings;
                 };
@@ -1224,7 +1284,7 @@ eConstruct.ecTreeTable.directive =
                             trackUpdate();
                         }
                     } else {
-                        scope.treeData = _.remove(scope.treeData, function (item) {
+                        $scope.treeData = _.remove($scope.treeData, function (item) {
                             return item['uid'] !== b['uid'];
                         });
                     }
@@ -1232,54 +1292,54 @@ eConstruct.ecTreeTable.directive =
 
 
                 tree.getData = function () {
-                    return scope.treeData;
+                    return $scope.treeData;
                 };
                 tree.setData = function (data) {
-                    scope.treeData = data;
+                    $scope.treeData = data;
                 };
 
 
                 /** @expose */
-                scope.loadMoreSign = false;
+                $scope.loadMoreSign = false;
                 /** @expose */
                 tree.toggleLoadMoreSign = function (flag) {
-                    scope.loadMoreSign = flag;
+                    $scope.loadMoreSign = flag;
                 };
                 /** @expose */
                 tree.getLoadMoreSign = function () {
-                    return scope.loadMoreSign;
+                    return $scope.loadMoreSign;
                 };
 
                 /** @expose */
-                scope.isListComplete = false;
+                $scope.isListComplete = false;
                 /** @expose */
                 tree.markListComplete = function (flag) {
-                    scope.isListComplete = flag;
+                    $scope.isListComplete = flag;
                 };
                 /** @expose */
                 tree.getListComplete = function () {
-                    return scope.isListComplete;
+                    return $scope.isListComplete;
                 };
 
                 /** @expose */
-                scope.isEmpty = false;
+                $scope.isEmpty = false;
                 /** @expose */
-                scope.tableStyle = function () {
+                $scope.tableStyle = function () {
                     var style = {};
-                    if (scope.isFullWidth) {
+                    if ($scope.isFullWidth) {
                         style['overflow-x'] = 'hidden';
                     }
-                    if (scope.options['excludeBorder']) {
+                    if ($scope.options['excludeBorder']) {
                         style['border'] = 'none';
                     }
                     return style;
                 };
 
                 /** @expose */
-                scope.filter = function (data) {
+                $scope.filter = function (data) {
                     setViewport();
                     return _.filter(data, function (d) {
-                        return d['branch']['_visible_'] || (scope.options['visibleOnly'] && scope.options['visibleOnly'](d));
+                        return d['branch']['_visible_'] || ($scope.options['visibleOnly'] && $scope.options['visibleOnly'](d));
                     });
                 };
 
@@ -1287,14 +1347,14 @@ eConstruct.ecTreeTable.directive =
                 var viewportTop = 0;
                 var viewportBottom = 0;
                 /** @expose */
-                scope.isInViewport = function (index) {
+                $scope.isInViewport = function (index) {
                     return index >= viewportTop && index <= viewportBottom;
                 };
                 /** @expose */
-                scope.treeRowsFiltered = [];
+                $scope.treeRowsFiltered = [];
                 /** @expose */
-                scope.getCanvasHeight = function () {
-                    return {'height': scope.treeRowsFiltered.length * scope.defaultCellHeight, 'width': '100%'};
+                $scope.getCanvasHeight = function () {
+                    return {'height': $scope.treeRowsFiltered.length * $scope.defaultCellHeight, 'width': '100%'};
                 };
 
                 //| filter: {branch: {_visible_ : true}}
@@ -1306,7 +1366,7 @@ eConstruct.ecTreeTable.directive =
                         '</span>';
 
                     var content = '<div ng-show="treeRowsFiltered.length > 0 && !isLoading" ng-style="options.excludeHeader ? {\'padding-bottom\': \'0\'} : {}" class="tree-grid-wrapper tree-grid" id="tree-grid-' + scope['$id'] + '">' +
-                        '<div ng-if="!options.excludeHeader" class="table-grid-header table-grid-height" ' + (scope.options['excludeBorder'] ? 'style="border:none; background-color: transparent"' : '') + '>' +
+                        '<div ng-if="!options.excludeHeader" class="table-grid-header table-grid-height" ' + ($scope.options['excludeBorder'] ? 'style="border:none; background-color: transparent"' : '') + '>' +
                         '<div class="table-grid-header-rows table-grid-height">' +
                         '<div class="table-grid-header-row table-grid-height">' +
                         ( headerTemplate ? headerTemplate :
@@ -1339,7 +1399,7 @@ eConstruct.ecTreeTable.directive =
                     $compile(contentElement)(scope);
 
 
-                    scope.$watch('treeRowsFiltered.length', function () {
+                    $scope.$watch('treeRowsFiltered.length', function () {
                         $timeout(function () {
                             angular.element('#tree-grid-' + scope['$id'] + ' .table-grid-body').off('scroll');
                             angular.element('#tree-grid-' + scope['$id'] + ' .table-grid-body').on('scroll', function () {
@@ -1352,21 +1412,21 @@ eConstruct.ecTreeTable.directive =
                     });
 
                     //select the tree nodes first if not empty
-                    _.each(scope.selectedBranches, function (branch) {
+                    _.each($scope.selectedBranches, function (branch) {
                         if (branch && !branch['selected']) {
                             selectBranch(branch, {'isMultiple': true});
                         }
                     });
 
-                    scope.$watchCollection('treeData', scope.treeControl['onTreeDataChange']);
+                    $scope.$watchCollection('treeData', $scope.treeControl['onTreeDataChange']);
 
                     $timeout(function () {
-                        $rootScope.$broadcast('tree.grid.created', scope.treeControl);
+                        $root$scope.$broadcast('tree.grid.created', $scope.treeControl);
                         viewpointElement = angular.element('#tree-grid-' + scope['$id'] + ' .table-grid-body');
                     });
                 };
 
-                scope.$on('$destroy', function () {
+                $scope.$on('$destroy', function () {
                     //if (intervalUpdate !== null) {
                     $interval.cancel(intervalUpdate);
                     //}
@@ -1383,21 +1443,21 @@ eConstruct.ecTreeTable.directive =
                     $(window).unbind('keydown', keyCodeDown);
                     angular.element('#tree-grid-' + scope['$id'] + ' .table-grid-body').off('scroll');
 
-                    _.each(scope.timers, function (timer) {
+                    _.each($scope.timers, function (timer) {
                         $timeout.cancel(timer);
                     });
                 });
 
-                if (scope.headerTemplateUrl) {
-                    $http.get(scope.rowTemplateUrl)
+                if ($scope.headerTemplateUrl) {
+                    $http.get($scope.rowTemplateUrl)
                         .success(function (rowTemplate) {
-                            $http.get(scope.headerTemplateUrl)
+                            $http.get($scope.headerTemplateUrl)
                                 .success(function (headerTemplate) {
                                     compileTemplate(rowTemplate, headerTemplate);
                                 });
                         });
                 } else {
-                    $http.get(scope.rowTemplateUrl)
+                    $http.get($scope.rowTemplateUrl)
                         .success(function (rowTemplate) {
                             compileTemplate(rowTemplate);
                         });

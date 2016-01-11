@@ -44,11 +44,20 @@
         return (w1 - w2);
     };
 
+    UtilService.prototype.setContainerWidth = function ($scope) {
+        if ($scope.containerWidth < $scope.options.minWidth) {
+            $scope.containerWidth = $scope.options.minWidth;
+            $scope.isFullWidth = false;
+        } else {
+            $scope.isFullWidth = true;
+        }
+    };
+
     UtilService.prototype.reCalculateWidth = function (w, totalWidth, totalCount, diffWidth) {
         if (resizingCol && isPercentageWidth && diffWidth) {
-            for (var i = 0; i < scope.colDefs.length; i++) {
-                if (resizingCol['$$hashKey'] === scope.colDefs[i]['$$hashKey']) {
-                    var col = scope.colDefs[i + 1];
+            for (var i = 0; i < $scope.colDefs.length; i++) {
+                if (resizingCol['$$hashKey'] === $scope.colDefs[i]['$$hashKey']) {
+                    var col = $scope.colDefs[i + 1];
                     var newWidth = (parseFloat(resizingCol['width']) + diffWidth);
                     if (newWidth < resizingCol['minWidth']) {
                         // = resizingCol['minWidth'] + diffWidth;
@@ -70,47 +79,30 @@
             }
             //setPercentageWidth();
         } else {
-            _.each(scope.colDefs, function (col) {
+            _.each($scope.colDefs, function (col) {
                 col['width'] = (col['width'] / totalWidth) * w;
             });
         }
     };
 
 
-    UtilService.prototype.setPercentageWidth = function (diffWidth) {
-        if (scope.callbacks && _.isFunction(scope.callbacks['adjustCellStyle'])) {
-            scope.callbacks['adjustCellStyle'](scope);
-        }
-
+    UtilService.prototype.setCellWidth = function ($scope, diffWidth) {
         var totalCount = 0;
-        var newWidth = $('#' + scope.treeContainerId).width();
-        // Not change the width if the container is inactive
-        if (newWidth === 0) {
-            return;
-        }
-        if (scope.options && scope.options['minWidth'] && newWidth < scope.options['minWidth']) {
-            newWidth = scope.options['minWidth'];
-            scope.isFullWidth = false;
-        } else {
-            scope.isFullWidth = true;
-        }
         var treeWidth = 0;
-        _.each(scope.colDefs, function (col) {
+        angular.forEach($scope.colDefs, function (col) {
             treeWidth += col['width'];
             totalCount++;
         });
-        var w = isPercentageWidth ? (newWidth - 2) : treeWidth;
+        var w = $scope.containerWidth;
         var hasScrollBar = false;
-        var body = $('#tree-grid-' + scope['$id'] + ' .table-grid-body');
+        var body = angular.element('#tree-grid-' + scope['$id'] + ' .table-grid-body');
         if (body.length && body[0]) {
             hasScrollBar = body.get(0).scrollHeight >= body.outerHeight();
-            w = hasScrollBar ? (w - scrollbarWidth) : w;
+            w = hasScrollBar ? (w - $scope.scrollbarWidth) : w;
         }
 
         if (diffWidth === undefined) {
-            var pi = scope.options['resizePivotColIndex'] === undefined ? 0 : scope.options['resizePivotColIndex'];
-            scope.colDefs[pi]['minWidth'] = scope.colDefs[pi]['minWidth'] === undefined ? 200 : scope.colDefs[pi]['minWidth'];
-
+!!!stops here
             var realWidth = newWidth - (hasScrollBar ? scrollbarWidth : 0);
 
             (function adjustCols(realWidth, gtMinWidthCols) {
@@ -142,15 +134,15 @@
                         gtMinWidthCols[f]['width'] = realWidth * colWidthRatios[f];
                     }
                 }
-            })(realWidth, scope.colDefs);
+            })(realWidth, $scope.colDefs);
         } else {
             reCalculateWidth(w, treeWidth, totalCount, diffWidth);
         }
 
         viewpointElement = angular.element('#tree-grid-' + scope['$id'] + ' .table-grid-body');
 
-        if (scope.$root && !scope.$root.$$phase) {
-            scope.$digest();
+        if ($scope.$root && !$scope.$root.$$phase) {
+            $scope.$digest();
         }
     };
 
