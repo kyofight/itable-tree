@@ -44,15 +44,6 @@
         return (w1 - w2);
     };
 
-    UtilService.prototype.setContainerWidth = function ($scope) {
-        if ($scope.containerWidth < $scope.options.minWidth) {
-            $scope.containerWidth = $scope.options.minWidth;
-            $scope.isFullWidth = false;
-        } else {
-            $scope.isFullWidth = true;
-        }
-    };
-
     UtilService.prototype.reCalculateWidth = function (w, totalWidth, totalCount, diffWidth) {
         if (resizingCol && isPercentageWidth && diffWidth) {
             for (var i = 0; i < $scope.colDefs.length; i++) {
@@ -87,63 +78,38 @@
 
 
     UtilService.prototype.setCellWidth = function ($scope, diffWidth) {
-        var totalCount = 0;
         var treeWidth = 0;
         angular.forEach($scope.colDefs, function (col) {
-            treeWidth += col['width'];
-            totalCount++;
+            treeWidth += col.width;
         });
         var w = $scope.containerWidth;
         var hasScrollBar = false;
-        var body = angular.element('#tree-grid-' + scope['$id'] + ' .table-grid-body');
-        if (body.length && body[0]) {
-            hasScrollBar = body.get(0).scrollHeight >= body.outerHeight();
+        $scope.treeBody = angular.element('#tree-grid-' + $scope.$id + ' .table-grid-body');
+        var wrapperWidth = $scope.treeBody.width();
+        if ($scope.treeBody.length && $scope.treeBody[0]) {
+            hasScrollBar = $scope.treeBody.get(0).scrollHeight >= $scope.treeBody.outerHeight();
             w = hasScrollBar ? (w - $scope.scrollbarWidth) : w;
         }
 
-        if (diffWidth === undefined) {
-!!!stops here
-            var realWidth = newWidth - (hasScrollBar ? scrollbarWidth : 0);
-
-            (function adjustCols(realWidth, gtMinWidthCols) {
-                var totalColWidth = 0;
-                _.each(gtMinWidthCols, function (col) {
-                    totalColWidth += col['width'];
-                });
-
-                var colWidthRatios = _.map(gtMinWidthCols, function (col) {
-                    return col['width'] / totalColWidth;
-                });
-
-                var indexes = [];
-                for (var c = 0; c < gtMinWidthCols.length; c++) {
-                    var col = gtMinWidthCols[c];
-                    var nw = realWidth * colWidthRatios[c];
-                    if (nw < col['minWidth']) {
-                        col['width'] = col['minWidth'];
-                        realWidth -= col['minWidth'];
-                        indexes.push(c);
-                    }
-                }
-                if (indexes.length > 0) {
-                    adjustCols(realWidth, _.filter(gtMinWidthCols, function (val, key) {
-                        return _.indexOf(indexes, key) === -1;
-                    }));
-                } else {
-                    for (var f = 0; f < gtMinWidthCols.length; f++) {
-                        gtMinWidthCols[f]['width'] = realWidth * colWidthRatios[f];
-                    }
-                }
-            })(realWidth, $scope.colDefs);
+        if (diffWidth === undefined && wrapperWidth > treeWidth) {
+            var newWidth = 0;
+            //expand to fit the container
+            angular.forEach($scope.colDefs, function (col) {
+                col.width = (col.width / treeWidth) * wrapperWidth;
+                newWidth += col.width;
+            });
+            //add the rounded width
+            if (newWidth < wrapperWidth) {
+                $scope.colDefs[0].width += wrapperWidth - newWidth;
+            }
         } else {
             reCalculateWidth(w, treeWidth, totalCount, diffWidth);
         }
 
-        viewpointElement = angular.element('#tree-grid-' + scope['$id'] + ' .table-grid-body');
 
-        if ($scope.$root && !$scope.$root.$$phase) {
-            $scope.$digest();
-        }
+        //if ($scope.$root && !$scope.$root.$$phase) {
+        //    $scope.$digest();
+        //}
     };
 
 })();

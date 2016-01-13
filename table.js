@@ -10,7 +10,9 @@
             restrict: 'E',
             replace: true,
             scope: {
+                multiSelect: '=',
                 treeData: '=',
+                colDefs: '=',
                 callbacks: '=',
                 options: '=',
                 icons: '='
@@ -63,11 +65,7 @@
                     /**
                      * the tree table container
                      */
-                    treeContainer: {
-                        width: 500,
-                        selector: '',
-                        minWidth: 300
-                    }
+                    treeContainer: 'body'
                 };
 
                 /**
@@ -100,6 +98,25 @@
                     }
                 });
 
+                /**
+                 * ****************** columns definitions ******************
+                 */
+                angular.forEach($scope.colDefs, function (col) {
+                    col.width = parseFloat(angular.isUndefined(col.minWidth) ? 50 : col.width);
+                    col.minWidth = parseFloat(angular.isUndefined(col.minWidth) ? col.width : col.minWidth);
+                    if (col.width <= 0) {
+                        col.width = 50;
+                        console.error('column has less than zero width, setting to 50px', col);
+                    }
+                    if (col.minWidth <= 0) {
+                        col.minWidth = col.width;
+                    }
+
+                    if (col.width < col.minWidth) {
+                        col.minWidth = col.width;
+                    }
+                });
+
 
                 /**
                  * ****************** callbacks ******************
@@ -128,22 +145,17 @@
                 /**
                  * ****************** tree container width settings ******************
                  */
-                $scope.containerWidth = parseFloat($scope.treeContainer.width);
+
                 $scope.scrollbarWidth = UtilService.getScrollBarWidth();
                 $scope.previousContainerWidth = 0;
                 $scope.isFullWidth = true;
-                if (!isFinite($scope.containerWidth)) {
-                    $scope.intervals.setCellWidth = $interval(function () {
-                        $scope.containerWidth = angular.element($scope.treeContainer.selector).width();
-                        if ($scope.previousContainerWidth !== $scope.containerWidth) {
-                            UtilService.setContainerWidth($scope);
-                            UtilService.setCellWidth($scope);
-                        }
-                    }, 500);
-                } else {
-                    UtilService.setContainerWidth($scope);
-                    UtilService.setCellWidth($scope);
-                }
+                $scope.intervals.setCellWidth = $interval(function () {
+                    $scope.containerWidth = angular.element($scope.treeContainer).width();
+                    if (isFinite($scope.containerWidth) && $scope.previousContainerWidth !== $scope.containerWidth) {
+                        UtilService.setCellWidth($scope);
+                    }
+                    $scope.previousContainerWidth = $scope.containerWidth;
+                }, 500);
 
                 /**
                  * ****************** tree init related functions ******************
@@ -216,9 +228,97 @@
                     if ($scope.callbacks.treeFilter) {
                         $scope.callbacks.treeFilter($scope.treeData);
                     }
+                };
+
+                /**
+                 * ****************** internal functions ******************
+                 */
 
 
-                }
+                $scope.toggleCheckboxes = function ($event) {
+                    var action = $event.target.checked;
+                    angular.forEach($scope.treeRows, function (row) {
+                        if (row.branch.selected !== action) {
+                            $scope.userClicksBranch({}, row.branch, {isMultiple: true});
+                        }
+                    });
+                };
+
+                $scope.scrollEnd = function () {
+                    if ($scope.loadMore()) {
+                        ($scope.loadMore())();
+                    }
+                };
+
+
+                $scope.setSwitch = function (branch) {
+                    if ($scope.rowSwitch()) {
+                        ($scope.rowSwitch())(branch);
+                    }
+                };
+
+
+                /** @expose */
+                $scope.setRow = function (branch) {
+                    if ($scope.rowInit()) {
+                        ($scope.rowInit())(branch);
+                    }
+                };
+
+                /** @expose */
+                $scope.onColResizeStart = function ($event, col) {
+                    resizingCol = col;
+                    resizeStartX = $event['screenX'];
+                    $(document).mousemove($scope.onMouseMove);
+                    $(document).mouseup($scope.onMouseUp);
+                    return false;
+                };
+
+                /** @expose */
+                $scope.onMouseMove = function (event) {
+                    if (resizingCol) {
+                        var resizedWidth = (event['screenX'] - resizeStartX);
+                        resizeStartX = event['screenX'];
+                        if (isPercentageWidth) {
+                            setPercentageWidth(resizedWidth);
+                        }
+                        if (!$scope.$root.$$phase) {
+                            $scope.$digest();
+                        }
+                    }
+                    return false;
+                };
+                /** @expose */
+                $scope.onMouseUp = function (event) {
+                    $(document).off('mousemove', $scope.onMouseMove);
+                    $(document).off('mouseup', $scope.onMouseUp);
+                    if (resizingCol) {
+                        var resizedWidth = (event['screenX'] - resizeStartX);
+                        if (isPercentageWidth) {
+                            setPercentageWidth(resizedWidth);
+                        }
+                    }
+                    if (!$scope.$root.$$phase) {
+                        $scope.$digest();
+                    }
+                    resizingCol = null;
+                    return false;
+                };
+
+                /**
+                 * ****************** external functions ******************
+                 */
+                var treeControl = $scope.treeControl = {};
+
+                treeControl.isSelectedAll = function () {
+                    for (var i = 0; i < $scope.treeRows.length; i++) {
+                        if (!$scope.treeRows[i].branch.selected) {
+                            return false;
+                        }
+                    }
+                    return true;
+                };
+
             }
         }
     }
