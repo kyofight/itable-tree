@@ -65,7 +65,11 @@
                     /**
                      * the tree table container
                      */
-                    treeContainer: 'body'
+                    treeContainer: 'body',
+                    /**
+                     * is the tree fit to container width
+                     */
+                    isFitTreeContainer: true
                 };
 
                 /**
@@ -239,7 +243,7 @@
                     var action = $event.target.checked;
                     angular.forEach($scope.treeRows, function (row) {
                         if (row.branch.selected !== action) {
-                            $scope.userClicksBranch({}, row.branch, {isMultiple: true});
+                            $scope.branchClicked({}, row.branch, {isMultiple: true});
                         }
                     });
                 };
@@ -267,20 +271,20 @@
 
                 /** @expose */
                 $scope.onColResizeStart = function ($event, col) {
-                    resizingCol = col;
-                    resizeStartX = $event['screenX'];
-                    $(document).mousemove($scope.onMouseMove);
-                    $(document).mouseup($scope.onMouseUp);
+                    $scope.resizingCol = col;
+                    $scope.resizeStartX = $event.screenX;
+                    angular.element(document).mousemove($scope.onMouseMove);
+                    angular.element(document).mouseup($scope.onMouseUp);
                     return false;
                 };
 
                 /** @expose */
-                $scope.onMouseMove = function (event) {
-                    if (resizingCol) {
-                        var resizedWidth = (event['screenX'] - resizeStartX);
-                        resizeStartX = event['screenX'];
+                $scope.onMouseMove = function ($event) {
+                    if ($scope.resizingCol) {
+                        var resizedWidth = ($event.screenX - $scope.resizeStartX);
+                        $scope.resizeStartX = $event.screenX;
                         if (isPercentageWidth) {
-                            setPercentageWidth(resizedWidth);
+                            UtilService.setPercentageWidth($scope, resizedWidth);
                         }
                         if (!$scope.$root.$$phase) {
                             $scope.$digest();
