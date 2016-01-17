@@ -22,7 +22,53 @@
 
         if (diffWidth === undefined && wrapperWidth > colTreeWidth) {
             if ($scope.options.isFitTreeContainer && wrapperWidth < colTreeWidth) {
+                //check if all min with < wrapper
+                var allMinWidth = 0;
+                angular.forEach($scope.colDefs, function (col) {
+                    allMinWidth += col.minWidth;
+                });
+                //if all min width < wrapper, throw error, set isFitTreeContainer to false, and adjust
+                if (allMinWidth > wrapperWidth) {
+                    console.error('column total minimum is greater than the tree width, setting isFitTreeContainer to false');
+                    $scope.options.isFitTreeContainer = false;
+                } else {
+                    //fit to container but keeping col min width
+                    (function adjustCols(wrapperWidth, gtMinWidthCols) {
+                        var totalColWidth = 0;
+                        angular.forEach(gtMinWidthCols, function (col) {
+                            totalColWidth += col.width;
+                        });
 
+                        var colWidthRatios = [];
+                        angular.forEach(gtMinWidthCols, function (col) {
+                            colWidthRatios.push(col.width / totalColWidth);
+                        });
+
+                        var indexes = [];
+                        for (var c = 0; c < gtMinWidthCols.length; c++) {
+                            var col = gtMinWidthCols[c];
+                            var nw = wrapperWidth * colWidthRatios[c];
+                            if (nw < col.minWidth) {
+                                col.width = col.minWidth;
+                                wrapperWidth -= col.minWidth;
+                                indexes.push(c);
+                            }
+                        }
+                        if (indexes.length > 0) {
+                            var remainingCols = [];
+                            angular.forEach(gtMinWidthCols, function (val, key) {
+                                if (indexes.indexOf(key) === -1) {
+                                    remainingCols.push(val);
+                                }
+                            });
+                            adjustCols(wrapperWidth, remainingCols);
+                        } else {
+                            for (var f = 0; f < gtMinWidthCols.length; f++) {
+                                gtMinWidthCols[f].width = wrapperWidth * colWidthRatios[f];
+                            }
+                        }
+                    })(wrapperWidth, $scope.colDefs);
+                }
             } else if (wrapperWidth > colTreeWidth) {
                 var newWidth = 0;
                 //expand to fit the container
