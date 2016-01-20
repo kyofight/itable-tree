@@ -1421,7 +1421,7 @@ eConstruct.ecTreeTable.directive =
                         ( headerTemplate ? headerTemplate :
                         '<div ng-style="cellStyle($index, $last, true)" class="table-grid-cell table-grid-height" ' +
                         'ng-repeat="col in colDefinitions">' + headerCheckbox + ' <span>{{col.displayName | translate}}</span>' +
-                        '<div ng-show="options.colResize" class="resize" ng-mousedown="onColResizeStart($event, col)"></div>' +
+                        '<div ng-show="options.colResize" class="resize" ng-mousedown="onColResizeStart($event, $index)"></div>' +
                         '</div>' ) +
                         '</div>' +
                         '</div>' +
