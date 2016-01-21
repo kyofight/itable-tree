@@ -50,13 +50,28 @@
                  */
                 $scope.defaultOptions = {
                     /**
+                     *
+                     */
+                    templates: {
+                        rowTemplateUrl: '',
+                        rowTemplate: ''
+                    },
+                    /**
+                     * icon font awesome
+                     */
+                    icons: {
+                        iconExpand: 'fa fa-plus',
+                        iconCollapse: 'fa fa-minus',
+                        iconLeaf: 'fa fa-file'
+                    },
+                    /**
                      * children property name for the treeData
                      */
                     itemsLabel: 'items',
                     /**
                      * default expand all nodes to a certain level
                      */
-                    expandLevel: 0,
+                    expandLevel: 2,
                     /**
                      * the property name used in expanding column
                      */
@@ -153,6 +168,7 @@
                 $scope.intervals = {};
 
 
+
                 /**
                  * ****************** tree container width settings ******************
                  */
@@ -169,7 +185,19 @@
                     $scope.previousContainerWidth = $scope.treeWidth;
                 }, 500);
 
+                /**
+                 *
+                 */
 
+                $scope.keyCode = 0;
+                $scope.keyCodeUp = function () {
+                    $scope.keyCode = 0;
+                };
+                $scope.keyCodeDown = function (event) {
+                    $scope.keyCode = event.keyCode;
+                };
+                $(window).bind('keyup', $scope.keyCodeUp);
+                $(window).bind('keydown', $scope.keyCodeDown);
 
             }
         }

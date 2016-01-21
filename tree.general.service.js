@@ -234,7 +234,7 @@
 
         TreeGeneralService.prototype.onMouseMove = function ($event) {
             var $scope = this.$scope;
-            if ($scope.resizingColIndex) {
+            if ($scope.resizingColIndex !== null) {
                 var resizedWidth = ($event.screenX - $scope.resizeStartX);
                 $scope.resizeStartX = $event.screenX;
                 this.setCellWidth(resizedWidth);
@@ -247,7 +247,7 @@
             var $scope = this.$scope;
             $(document).off('mousemove', $scope.onMouseMove);
             $(document).off('mouseup', $scope.onMouseUp);
-            if ($scope.resizingColIndex) {
+            if ($scope.resizingColIndex !== null) {
                 var resizedWidth = (event.screenX - $scope.resizeStartX);
                 this.setCellWidth(resizedWidth);
             }
@@ -256,87 +256,95 @@
         };
 
 
-        /** @expose */
         TreeGeneralService.prototype.cellStyle = function (index, isLastCell, isHeaderCell) {
-            //reworked to save time to calculate cell style on 30/10/2015
+            var $scope = this.$scope;
             if (index === 0) {
                 var left = 0;
-                for (var i = 0; i < scope.colDefinitions.length; i++) {
+                for (var i = 0; i < $scope.colDefs.length; i++) {
                     var style = {};
-                    style['width'] = scope.colDefinitions[i]['width'] ? scope.colDefinitions[i]['width'] + 'px' : (isPercentageWidth ? 0 : scope.defaultCellWidth) + 'px';
-                    style['cursor'] = resizingCol ? 'col-resize' : 'pointer';
-                    style['text-align'] = scope.colDefinitions[i]['align'] ? scope.colDefinitions[i]['align'] : (isHeaderCell ? 'center' : 'left');
+                    style.width = $scope.colDefs[i].width;
+                    style.cursor = $scope.resizingColIndex !== null ? 'col-resize' : 'pointer';
+                    style['text-align'] = $scope.colDefs[i].align ? $scope.colDefs[i].align : (isHeaderCell ? 'center' : 'left');
 
                     if (isLastCell) {
                         //style['border-right'] = 'none';
                     }
                     if (i > 0) {
-                        left += parseFloat(scope.colDefinitions[i-1]['width'] ? scope.colDefinitions[i-1]['width'] : (isPercentageWidth ? 0 : scope.defaultCellWidth));
+                        left += parseFloat(scope.colDefs[i-1].width);
                     }
                     style['left'] = left + 'px';
-                    scope.colDefinitions[i]['cellStyle'] = style;
+                    $scope.colDefs[i].cellStyle = style;
                 }
             }
 
-            return scope.colDefinitions[index]['cellStyle'];
+            return $scope.colDefs[index].cellStyle;
         };
-        /** @expose */
+
         TreeGeneralService.prototype.cellStyleInner = function (index) {
+            var $scope = this.$scope;
             var style = {};
-            style['width'] = scope.colDefinitions[index]['width'] ? (scope.colDefinitions[index]['width'] - 11) + 'px' : (isPercentageWidth ? 0 : scope.defaultCellWidth - 11) + 'px';
-            style['cursor'] = resizingCol ? 'col-resize' : 'pointer';
-            style['display'] = 'block';
-            style['text-align'] = scope.colDefinitions[index]['align'] ? scope.colDefinitions[index]['align'] : 'left';
+            style.width = ($scope.colDefs[index].width - 11) + 'px';
+            style.cursor = $scope.resizingColIndex !== null ? 'col-resize' : 'pointer';
+            style.display = 'block';
+            style['text-align'] = $scope.colDefs[index].align ? $scope.colDefs[index].align : 'left';
 
             return style;
         };
-        /** @expose */
+
+
         TreeGeneralService.prototype.rowStyle = function (index) {
+            var $scope = this.$scope;
             var style = {};
-            style['top'] = (index * scope.defaultCellHeight) + 'px';
-            style['height'] = scope.defaultCellHeight;
+            style.top = (index * $scope.cellHeight) + 'px';
+            style.height = $scope.cellHeight;
             return style;
         };
 
-        if (scope.rowClass() === undefined) {
-            scope.rowClass = function (odd, selected) {
-                return (odd ? 'table-grid-row-odd' : 'table-grid-row-even') + (selected ? ' active' : '');
-            };
-        } else {
-            scope.rowClass = scope.rowClass();
-        }
+        TreeGeneralService.prototype.rowClass = function (odd, selected) {
+            return (odd ? 'table-grid-row-odd' : 'table-grid-row-even') + (selected ? ' active' : '');
+        };
 
-        /** @expose */
         TreeGeneralService.prototype.levelStyle = function (level) {
             var style = {};
-            style['left'] = ((level - 1) * 20) + 'px';
+            style.left = ((level - 1) * 20) + 'px';
             return style;
         };
 
-        /** @expose */
         TreeGeneralService.prototype.preventDefault = function ($event) {
             $event.preventDefault();
             $event.stopPropagation();
         };
 
-
-        /** @expose */
         TreeGeneralService.prototype.anyVisibleChildren = function (branch) {
-            if (!branch[itemsLabel] || !branch[itemsLabel].length) {
-                branch['anyChildren'] = true;
+            var $scope = this.$scope;
+            if (!branch[$scope.options.itemsLabel] || !branch[$scope.options.itemsLabel].length) {
+                branch.anyChildren = true;
                 return false;
             }
             //1 level traverse only
             var anyVisibleChildren = false;
-            _.any(branch[itemsLabel], function (item) {
+            angular.forEach(branch[$scope.options.itemsLabel], function (item) {
                 if (item['visible_']) {
                     anyVisibleChildren = true;
                     return true;
                 }
             });
-            branch['anyChildren'] = !anyVisibleChildren;
+            branch.anyChildren = !anyVisibleChildren;
             return anyVisibleChildren;
         };
+
+
+        //-----------------------------------------------------
+        /**
+         * TODO
+         */
+        TreeGeneralService.prototype.test = function () {
+            /** @expose */
+            scope.selectedBranches = scope.selectedBranches ? scope.selectedBranches : {};
+
+
+        }
+
 
 
         return TreeGeneralService;
