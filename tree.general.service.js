@@ -1,7 +1,7 @@
 'use strict';
 
 (function () {
-    angular.module('iTableTree').factory('TreeGeneralService', function () {
+    angular.module('iTableTree').factory('TreeGeneralService', ['UtilService', function (UtilService) {
         function TreeGeneralService ($scope) {
             this.$scope = $scope;
         }
@@ -164,7 +164,6 @@
                     branch._visible_ = !parent ? true : visible;
                 }
 
-
                 $scope.initBranch(branch);
 
                 $scope.treeRows.push({
@@ -181,6 +180,10 @@
 
             if ($scope.callbacks.treeFilter) {
                 $scope.callbacks.treeFilter($scope.treeData);
+            }
+
+            if ($scope.callbacks.treeSort) {
+                $scope.callbacks.treeSort($scope.treeData);
             }
         };
 
@@ -207,6 +210,7 @@
         };
 
 
+        /**
         TreeGeneralService.prototype.setSwitch = function (branch) {
             var $scope = this.$scope;
             if ($scope.rowSwitch()) {
@@ -220,6 +224,7 @@
                 ($scope.rowInit())(branch);
             }
         };
+         **/
 
 
         TreeGeneralService.prototype.onColResizeStart = function ($event, $index) {
@@ -324,7 +329,7 @@
             //1 level traverse only
             var anyVisibleChildren = false;
             angular.forEach(branch[$scope.options.itemsLabel], function (item) {
-                if (item['visible_']) {
+                if (item.visible_) {
                     anyVisibleChildren = true;
                     return true;
                 }
@@ -348,5 +353,5 @@
 
 
         return TreeGeneralService;
-    });
+    }]);
 })();

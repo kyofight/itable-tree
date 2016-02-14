@@ -1,7 +1,8 @@
 # itable-tree
  Under development, check back later
 
-
+todo:
+remove jquery dependency
 
  next release:
  - responsive column width (hide/show upon container width)
