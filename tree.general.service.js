@@ -124,93 +124,95 @@
                     if (!angular.isArray(data[$scope.options.itemsLabel])) {
                         data[$scope.options.itemsLabel] = [];
                     } else if (data[$scope.options.itemsLabel].length) {
-                        angular.forEach(data[$scope.options.itemsLabel], function () {
-                            walkTree(data[$scope.options.itemsLabel], data, level + 1, (visible || !parent) && branch.expanded);
-                        });
+                        walkTree(data[$scope.options.itemsLabel], data, level + 1, (visible || !parent) && branch.expanded_);
                     }
                 });
             })($scope.treeData, null, 0, true);
         };
 
 
-        /**
-         * set the branch
-         * @param branch
-         */
-        TreeGeneralService.prototype.initBranch = function (branch) {
+        TreeGeneralService.prototype.applyTreeFilter = function () {
             var $scope = this.$scope;
-            if ($scope.callbacks.initBranch) {
-                $scope.callbacks.initBranch(branch);
+            if ($scope.callbacks.treeFilter) {
+                $scope.callbacks.treeFilter($scope.treeData);
             }
+        };
+
+        TreeGeneralService.prototype.applyTreeSort = function () {
+            var $scope = this.$scope;
+            $scope.treeData.sort($scope.callbacks.treeSort);
+            $scope.forEachBranch(function (branch) {
+                branch[$scope.options.itemsLabel].sort($scope.callbacks.treeSort);
+            });
+        };
+
+        /**
+         *
+         * @param branch
+         * @param parent
+         * @param level
+         */
+        TreeGeneralService.prototype.getBranch = function (branch, parent, level) {
+            var $scope = this.$scope;
+            var row = {};
+            row.model = branch;
+            row.uid = this.options.modelKey ? branch[this.options.modelKey] : UtilService.generateUUID();
+            row.pid = parent ? parent.uid : '';
+            row.level = level;
+            row.expanded = function () {
+                return this.model.expanded_;
+            };
+            row.visible_ = function () {
+                return this.model.visible_;
+            };
+            row._visible_ = function () {
+                return this.model._visible_;
+            };
+            row.label = function () {
+                return this.model[$scope.options.label];
+            };
+            row.treeIcon = function () {
+                return this.expanded() ? $scope.icons.iconCollapse : $scope.icons.iconExpand;
+            };
+
+            if ($scope.callbacks.initBranch) {
+                $scope.callbacks.initBranch(row);
+            }
+
+            return row;
         };
 
 
         TreeGeneralService.prototype.init = function () {
             var $scope = this.$scope;
-            $scope.treeRows = [];
+            var self = this;
+            $scope.treeBranches = [];
+
+            this.applyTreeSort();
 
             $scope.forEachBranch(function (branch, parent, level, visible) {
-                branch.uid = UtilService.generateUUID();
-                branch.pid = parent ? parent.uid : '';
+                branch.expanded_ = level < $scope.options.expandLevel;
+                branch.visible = true;
+                branch._visible_ = !parent ? true : visible;
 
-                branch.level = level;
-
-                if (typeof branch.expanded === 'undefined') {
-                    branch.expanded = branch.level < $scope.options.expandLevel;
-                }
-
-                if (!$scope.callbacks.treeFilter) {
-                    branch.visible_ = true;
-                    branch._visible_ = !parent ? true : visible;
-                }
-
-                $scope.initBranch(branch);
-
-                $scope.treeRows.push({
-                    level: level,
-                    branch: branch,
-                    label: function () {
-                        return this.branch[$scope.options.label];
-                    },
-                    treeIcon: function () {
-                        return this.branch.expanded ? $scope.icons.iconCollapse : $scope.icons.iconExpand;
-                    }
-                });
+                $scope.treeBranches.push(self.getBranch(branch, parent, level));
             });
 
-            if ($scope.callbacks.treeFilter) {
-                $scope.callbacks.treeFilter($scope.treeData);
-            }
-
-            if ($scope.callbacks.treeSort) {
-                $scope.callbacks.treeSort($scope.treeData);
-            }
+            this.applyTreeFilter();
         };
 
         /**
          * ****************** internal functions ******************
          */
 
-
-        TreeGeneralService.prototype.toggleCheckboxes = function ($event) {
-            var $scope = this.$scope;
-            var action = $event.target.checked;
-            angular.forEach($scope.treeRows, function (row) {
-                if (row.branch.selected !== action) {
-                    $scope.clickBranch({}, row.branch, {isMultiple: true});
-                }
-            });
-        };
-
+        /**
         TreeGeneralService.prototype.scrollEnd = function () {
             var $scope = this.$scope;
-            if ($scope.loadMore()) {
-                ($scope.loadMore())();
+            if ($scope.callbacks.loadMore) {
+                $scope.callbacks.loadMore();
             }
         };
 
-
-        /**
         TreeGeneralService.prototype.setSwitch = function (branch) {
             var $scope = this.$scope;
             if ($scope.rowSwitch()) {

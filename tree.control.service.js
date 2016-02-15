@@ -1,22 +1,22 @@
 'use strict';
 
 (function () {
-    angular.module('iTableTree').factory('TreeControlService', ['$window', function ($window) {
+    angular.module('iTableTree').factory('TreeControlService', ['$window', 'TreeGeneralService', 'UtilService', function ($window, TreeGeneralService, UtilService) {
         var userAgent = $window.navigator.userAgent.toLowerCase();
         var isMac = $window.navigator && $window.navigator.platform.toLowerCase().indexOf('mac') >= 0;
         var isFirefox = userAgent.indexOf('firefox') > -1;
         var isOpera = userAgent.indexOf('opera') > -1;
         var isWebKit = userAgent.indexOf('safari') > -1 || userAgent.indexOf('chrome') > -1;
 
-        function TreeControlService ($scope) {
+        function TreeControlService($scope) {
             this.$scope = $scope;
         }
 
         TreeControlService.prototype.isSelectedAll = function () {
             var $scope = this.$scope;
 
-            for (var i = 0; i < $scope.treeRows.length; i++) {
-                if (!$scope.treeRows[i].branch.selected) {
+            for (var i = 0; i < $scope.treeBranches.length; i++) {
+                if (!$scope.treeBranches[i].branch.selected) {
                     return false;
                 }
             }
@@ -145,91 +145,61 @@
         };
 
         /**
-         * TODO: stop here, dinner time
+         * TODO: stop here, bed time
          */
-        TreeControlService.prototype.addBranchExternal = function (newBranch, sortKey, reverseOrder) {
-            var folderIndex = 0;
-            var foundNode = null;
+        TreeControlService.prototype.toggleCheckboxes = function ($event) {
+            var $scope = this.$scope;
+            var self = this;
+            var action = $event.target.checked;
+            angular.forEach($scope.treeBranches, function (branch) {
+                if (branch.selected !== action) {
+                    self.selectBranch({}, branch, {isMultiple: true});
+                }
+            });
+        };
 
-            var findParentNode = function (nodes, i) {
-                _.any(nodes, function (node) {
-                    if (node['isFolder'] && (folderArr[i] === node['name'] || folderArr[i] === node['text'])) {
-                        foundNode = node;
-                        folderIndex++;
-                        if (folderArr[folderIndex] === undefined) {
-                            return true;
-                        } else if (node[itemsLabel] && node[itemsLabel].length) {
-                            findParentNode(node[itemsLabel], folderIndex);
-                        }
+        TreeControlService.prototype.saveTreeState = function ($event, branch) {
+            //save expanded, selected nodes based on unique model key
+
+            //also save filter? should be user do that
+
+        };
+
+        TreeControlService.prototype.getParentBranch = function (child) {
+            var $scope = this.$scope;
+            var parent = null;
+            if (child.pid) {
+                for (var i = 0; i < $scope.treeBranches.length; i++) {
+                    if ($scope.treeBranches[i].uid === child.pid) {
+                        parent = $scope.treeBranches[i];
+                        break;
                     }
-                });
-            };
-
-            var folderArr = FolderService.formFolderArray(newBranch['folder'] || (newBranch['model'] && newBranch['model']['folder'] ? newBranch['model']['folder'] : ''));
-            var newNode = newBranch['model'] ? newBranch : {
-                'text': newBranch['name'] || newBranch['text'],
-                'isFolder': false,
-                'expanded': true,
-                'model': newBranch
-            };
-
-            if (!folderArr || !folderArr.length) {
-                scope.treeData.push(newNode);
-                FolderService.sortList(scope.treeData, sortKey, reverseOrder);
-            } else {
-                findParentNode(scope.treeData, folderIndex);
-                if (foundNode) {
-                    tree.expandAllParents(foundNode);
-                    var n = foundNode;
-                    while (folderIndex < folderArr.length) {
-                        var folderObject = {
-                            'text': folderArr[folderIndex],
-                            'isFolder': true,
-                            'expanded': true,
-                            'model': {}
-                        };
-                        folderObject[itemsLabel] = [];
-                        n[itemsLabel].push(folderObject);
-                        n = folderObject;
-                        folderIndex++;
-                    }
-                    n[itemsLabel].push(newNode);
-                    FolderService.sortList(foundNode[itemsLabel], sortKey, reverseOrder);
-                } else {
-                    //no parent found, form new branch
-                    var newList = FolderService.buildTreeFromList([newNode]);
-                    scope.treeData.push(newList[0]);
-                    FolderService.sortList(scope.treeData, sortKey, reverseOrder);
                 }
             }
-
-
-            trackUpdate();
+            return parent;
         };
-        /** @expose
-         * @param {Object} branch
-         * @param {Object} newModel
-         * @param {string=} sortKey
-         * @param {boolean=} reverseOrder
-         **/
-        TreeControlService.prototype.addSubBranchExternal = function (branch, newModel, sortKey, reverseOrder) {
-            var newNode = newModel['model'] ? newModel : {
-                'text': newModel['name'] || newModel['text'],
-                'isFolder': false,
-                'expanded': true,
-                'model': newModel,
-                'selected': branch['selected'],
-                'visible_': true
-            };
-            tree.expandAllParents(branch);
-            if (!branch[itemsLabel]) {
-                branch[itemsLabel] = [];
-            }
-            branch[itemsLabel].push(newNode);
-            FolderService.sortList(branch[itemsLabel], sortKey, reverseOrder);
 
-            trackUpdate();
+
+        TreeControlService.prototype.sortNodes = function () {
+
         };
+
+        TreeControlService.prototype.addBranchExternal = function (branches, parent, isExpandParents) {
+            var $scope = this.$scope;
+            parent[$scope.options.itemsLabel].concat(branches);
+
+            angular.forEach(branches, function (branch) {
+                //1. insert node into parent
+
+                //2. remember what position is at of the newly inserted after sorting
+
+                //3. insert the treeBranches with the parent position plus the child position relative to its parent
+
+            });
+
+            //apply filter
+        };
+
         /** @expose **/
         TreeControlService.prototype.deleteBranchExternal = function (match) {
             var foundNode = null;

@@ -33,7 +33,7 @@
                  *
                  * @type {Array}
                  */
-                $scope.treeRows = [];
+                $scope.treeBranches = [];
 
                 /**
                  * ****************** options ******************
@@ -152,6 +152,22 @@
                  *
                  */
                 $scope.callbacks = angular.isObject($scope.callbacks) ? $scope.callbacks : {};
+
+                /**
+                 * Default callbacks
+                 */
+                $scope.defaultCallbacks = {
+                    treeSort: function (item1, item2) {
+                        return UtilService.naturalSort(item1.label(), item2.label());
+                    }
+                };
+
+
+                angular.forEach($scope.defaultCallbacks, function (val, key) {
+                    if (typeof $scope.callbacks[key] === 'undefined') {
+                        $scope.callbacks[key] = val;
+                    }
+                });
 
 
                 /**
