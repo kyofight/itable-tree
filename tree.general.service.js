@@ -124,10 +124,21 @@
                     if (!angular.isArray(data[$scope.options.itemsLabel])) {
                         data[$scope.options.itemsLabel] = [];
                     } else if (data[$scope.options.itemsLabel].length) {
-                        walkTree(data[$scope.options.itemsLabel], data, level + 1, (visible || !parent) && branch.expanded_);
+                        walkTree(data[$scope.options.itemsLabel], data, level + 1, (visible || !parent) && branch._expanded);
                     }
                 });
             })($scope.treeData, null, 0, true);
+        };
+
+        TreeGeneralService.prototype.forEachChild = function (b, callback, deep) {
+            var $scope = this.$scope;
+            var self = this;
+            angular.forEach(b[$scope.options.itemsLabel], function (c) {
+                callback(c, b);
+                if (deep && c[$scope.options.itemsLabel] && c[$scope.options.itemsLabel].length) {
+                    self.forEachChild(c, callback, deep);
+                }
+            });
         };
 
 
@@ -151,54 +162,44 @@
          * @param branch
          * @param parent
          * @param level
+         * @param visible
          */
-        TreeGeneralService.prototype.getBranch = function (branch, parent, level) {
+        TreeGeneralService.prototype.initBranch = function (branch, parent, level, visible, expanded) {
             var $scope = this.$scope;
-            var row = {};
-            row.model = branch;
-            row.uid = this.options.modelKey ? branch[this.options.modelKey] : UtilService.generateUUID();
-            row.pid = parent ? parent.uid : '';
-            row.level = level;
-            row.expanded = function () {
-                return this.model.expanded_;
-            };
-            row.visible_ = function () {
-                return this.model.visible_;
-            };
-            row._visible_ = function () {
-                return this.model._visible_;
-            };
-            row.label = function () {
+            branch.uid = $scope.options.modelKey ? branch[$scope.options.modelKey] : UtilService.generateUUID();
+            branch.pid = parent ? parent.uid : '';
+            branch._level = level;
+            branch._expanded = expanded === undefined ? level < $scope.options.expandLevel : expanded;
+            branch._visible = !parent ? true : parent._visible;
+            branch._visible_ = !parent ? true : visible;
+            branch.prototype.label = $scope.callbacks.getBranchLabel ? $scope.callbacks.getBranchLabel : function () {
                 return this.model[$scope.options.label];
             };
-            row.treeIcon = function () {
-                return this.expanded() ? $scope.icons.iconCollapse : $scope.icons.iconExpand;
+            branch.prototype.treeIcon = function () {
+                return this._expanded ? $scope.icons.iconCollapse : $scope.icons.iconExpand;
+            };
+            branch.prototype.getParent = function () {
+                return parent;
             };
 
             if ($scope.callbacks.initBranch) {
-                $scope.callbacks.initBranch(row);
+                $scope.callbacks.initBranch(branch);
             }
 
-            return row;
+            return branch;
         };
 
 
         TreeGeneralService.prototype.init = function () {
             var $scope = this.$scope;
             var self = this;
-            $scope.treeBranches = [];
-
-            this.applyTreeSort();
 
             $scope.forEachBranch(function (branch, parent, level, visible) {
-                branch.expanded_ = level < $scope.options.expandLevel;
-                branch.visible = true;
-                branch._visible_ = !parent ? true : visible;
-
-                $scope.treeBranches.push(self.getBranch(branch, parent, level));
+                self.initBranch(branch, parent, level, visible);
             });
 
             this.applyTreeFilter();
+            this.applyTreeSort();
         };
 
         /**
@@ -338,6 +339,19 @@
             });
             branch.anyChildren = !anyVisibleChildren;
             return anyVisibleChildren;
+        };
+
+
+
+
+
+        TreeGeneralService.prototype.prepareTreeData = function () {
+            //var $scope =
+
+            //setViewport();
+            //return _.filter(data, function (d) {
+            //    return d['branch']['_visible_'] || (scope.options['visibleOnly'] && scope.options['visibleOnly'](d));
+            //});
         };
 
 

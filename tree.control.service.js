@@ -179,108 +179,38 @@
             return parent;
         };
 
-
-        TreeControlService.prototype.sortNodes = function () {
-
-        };
-
-        TreeControlService.prototype.addBranchExternal = function (branches, parent, isExpandParents) {
+        TreeControlService.prototype.addBranch = function (branches, parent, isExpandParents) {
             var $scope = this.$scope;
-            parent[$scope.options.itemsLabel].concat(branches);
+            (function appendChildren (branches, parent) {
+                angular.forEach(branches, function (branch) {
+                    TreeGeneralService.initBranch(branch, parent, parent._level + 1, parent._visible_, isExpandParents);
+                    if (branch[$scope.options.itemsLabel] && branch[$scope.options.itemsLabel].length) {
+                        appendChildren(branch[$scope.options.itemsLabel], parent);
+                    }
+                });
+            })(branches, parent);
+            parent[$scope.options.itemsLabel] = parent[$scope.options.itemsLabel].concat(branches);
+            parent[$scope.options.itemsLabel].sort($scope.callbacks.treeSort);
 
-            angular.forEach(branches, function (branch) {
-                //1. insert node into parent
+            if (isExpandParents) {
+                var p;
+                parent = true;
+                TreeGeneralService.forEachChild(parent);
+                while(p = parent.getParentBranch()) {
+                    p.expanded = true;
+                    TreeGeneralService.forEachChild(p, function (c, p) {
+                        c._visible_ = p._visible_ && p.expanded && c.visible_;
+                    });
+                }
+            }
+            TreeGeneralService.applyTreeFilter();
+        };
 
-                //2. remember what position is at of the newly inserted after sorting
-
-                //3. insert the treeBranches with the parent position plus the child position relative to its parent
-
+        TreeControlService.prototype.toggleExpansion = function (branch, flag) {
+            branch.expanded = flag === undefined ? !branch.expanded : flag;
+            TreeGeneralService.forEachChild(branch, function (c, p) {
+                c._visible_ = p._visible_ && p.expanded && branch.expanded && c.visible_;
             });
-
-            //apply filter
-        };
-
-        /** @expose **/
-        TreeControlService.prototype.deleteBranchExternal = function (match) {
-            var foundNode = null;
-
-            var findNode = function (nodes) {
-                _.any(nodes, function (node) {
-                    if (foundNode) {
-                        return true;
-                    }
-
-                    if (!node['isFolder'] && match(node)) {
-                        foundNode = node;
-                    } else if (node[itemsLabel] && node[itemsLabel].length) {
-                        findNode(node[itemsLabel]);
-                    }
-                });
-            };
-            findNode(scope.treeData);
-
-            if (foundNode) {
-                tree.deleteBranch(foundNode);
-                //also delete the selected nodes instance
-                _.remove(scope.selectedBranches, function (branch) {
-                    return branch === foundNode;
-                });
-
-                trackUpdate();
-                return foundNode;
-            }
-        };
-        /** @expose **/
-        TreeControlService.prototype.updateBranchExternal = function (match, update) {
-            var foundNode = null;
-
-            var findNode = function (nodes) {
-                _.any(nodes, function (node) {
-                    if (foundNode) {
-                        return true;
-                    }
-
-                    if (!node['isFolder'] && match(node)) {
-                        foundNode = node;
-                    } else if (node[itemsLabel] && node[itemsLabel].length) {
-                        findNode(node[itemsLabel]);
-                    }
-                });
-            };
-
-            findNode(scope.treeData);
-
-            if (foundNode) {
-                update(foundNode, function (sort) {
-                    var p = tree.getParentBranch(foundNode) || scope.treeData;
-                    while (p !== undefined) {
-                        if (!_.isFunction(sort)) {
-                            FolderService.sortList(p[itemsLabel] || p, sort);
-                        } else {
-                            sort(p[itemsLabel] || p);
-                        }
-                        p = tree.getParentBranch(p);
-                    }
-                });
-
-                trackUpdate();
-            }
-        };
-        /** @expose */
-        TreeControlService.prototype.addBranchWithParent = function (parent, newBranch) {
-            if (parent !== undefined) {
-                parent[itemsLabel].push(newBranch);
-                parent['expanded'] = true;
-                trackUpdate();
-            } else {
-                scope.treeData.push(newBranch);
-            }
-            return newBranch;
-        };
-        /** @expose */
-        tree.addRootBranch = function (newBranch) {
-            tree.addBranchWithParent(null, newBranch);
-            return newBranch;
         };
 
         return TreeControlService;
