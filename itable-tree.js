@@ -1498,7 +1498,7 @@ eConstruct.ecTreeTable.directive =
                 });
 
                 if (scope.headerTemplateUrl) {
-                    $http.get(scope.rowTemplateUrl)
+                    $templateRequest(scope.rowTemplateUrl)
                         .success(function (rowTemplate) {
                             $http.get(scope.headerTemplateUrl)
                                 .success(function (headerTemplate) {

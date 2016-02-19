@@ -182,7 +182,8 @@
                 $scope.UpdateCount = 0;
                 $scope.previousUpdateCount = null;
                 $scope.intervals = {};
-
+                $scope.viewportTop = 0;
+                $scope.viewportBottom = 0;
 
                 /**
                  * ****************** watch tree changes ******************
@@ -233,20 +234,7 @@
                  *
                  * TODO: stop here, meeting time
                  */
-                var viewportTop = 0;
-                var viewportBottom = 0;
-                /** @expose */
-                scope.isInViewport = function (index) {
-                    return index >= viewportTop && index <= viewportBottom;
-                };
-                /** @expose */
-                scope.treeRowsFiltered = [];
-                /** @expose */
-                scope.getCanvasHeight = function () {
-                    return {'height': scope.treeRowsFiltered.length * scope.defaultCellHeight, 'width': '100%'};
-                };
 
-                //| filter: {branch: {_visible_ : true}}
                 var compileTemplate = function (rowTemplate, headerTemplate) {
                     var headerCheckbox = '<span ng-show="multiSelect" ng-if="expandingProperty === col.field">' +
                         '<input type="checkbox" ng-checked="isSelectedAll()" ' +

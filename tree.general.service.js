@@ -2,7 +2,7 @@
 
 (function () {
     angular.module('iTableTree').factory('TreeGeneralService', ['UtilService', function (UtilService) {
-        function TreeGeneralService ($scope) {
+        function TreeGeneralService($scope) {
             this.$scope = $scope;
         }
 
@@ -107,7 +107,6 @@
         };
 
 
-
         /**
          * ****************** tree init related functions ******************
          */
@@ -207,21 +206,21 @@
          */
 
         /**
-        TreeGeneralService.prototype.scrollEnd = function () {
+         TreeGeneralService.prototype.scrollEnd = function () {
             var $scope = this.$scope;
             if ($scope.callbacks.loadMore) {
                 $scope.callbacks.loadMore();
             }
         };
 
-        TreeGeneralService.prototype.setSwitch = function (branch) {
+         TreeGeneralService.prototype.setSwitch = function (branch) {
             var $scope = this.$scope;
             if ($scope.rowSwitch()) {
                 ($scope.rowSwitch())(branch);
             }
         };
 
-        TreeGeneralService.prototype.setRow = function (branch) {
+         TreeGeneralService.prototype.setRow = function (branch) {
             var $scope = this.$scope;
             if ($scope.rowInit()) {
                 ($scope.rowInit())(branch);
@@ -278,7 +277,7 @@
                         //style['border-right'] = 'none';
                     }
                     if (i > 0) {
-                        left += parseFloat(scope.colDefs[i-1].width);
+                        left += parseFloat(scope.colDefs[i - 1].width);
                     }
                     style['left'] = left + 'px';
                     $scope.colDefs[i].cellStyle = style;
@@ -342,30 +341,21 @@
         };
 
 
-
-
-
-        TreeGeneralService.prototype.prepareTreeData = function () {
-            //var $scope =
-
-            //setViewport();
-            //return _.filter(data, function (d) {
-            //    return d['branch']['_visible_'] || (scope.options['visibleOnly'] && scope.options['visibleOnly'](d));
-            //});
-        };
-
-
         //-----------------------------------------------------
         /**
          * TODO
          */
-        TreeGeneralService.prototype.test = function () {
-            /** @expose */
-            scope.selectedBranches = scope.selectedBranches ? scope.selectedBranches : {};
 
 
-        }
+        TreeGeneralService.prototype.isInViewport = function (index) {
+            var $scope = this.$scope;
+            return index >= $scope.viewportTop && index <= $scope.viewportBottom;
+        };
 
+        TreeGeneralService.prototype.getCanvasHeight = function () {
+            var $scope = this.$scope;
+            return {height: $scope.treeRowsFiltered.length * $scope.options.cellHeight, width: '100%'};
+        };
 
 
         return TreeGeneralService;
