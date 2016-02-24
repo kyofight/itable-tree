@@ -1,0 +1,204 @@
+/*
+   treeGrid.css
+
+   style for the tree-grid
+   for both Bootstrap 2 and Bootstrap 3
+
+*/
+
+.tree-grid .tree-grid-row {
+    padding: 0px;
+    margin: 0px;
+}
+
+.tree-grid .tree-grid-row td {
+    padding: 1px;
+    margin: 0px;
+}
+
+.tree-grid .tree-grid-row a {
+    padding: 3px 10px;
+}
+
+.tree-grid i.indented {
+    padding: 2px;
+}
+
+.tree-grid {
+}
+
+.tree-grid .level-1 .indented {
+    position: relative;
+    left: 0px;
+}
+
+.tree-grid .level-2 .indented {
+    position: relative;
+    left: 20px;
+}
+
+.tree-grid .level-3 .indented {
+    position: relative;
+    left: 40px;
+}
+
+.tree-grid .level-4 .indented {
+    position: relative;
+    left: 60px;
+}
+
+.tree-grid .level-5 .indented {
+    position: relative;
+    left: 80px;
+}
+
+.tree-grid .level-6 .indented {
+    position: relative;
+    left: 100px;
+}
+
+.tree-grid .level-7 .indented {
+    position: relative;
+    left: 120px;
+}
+
+.tree-grid .level-8 .indented {
+    position: relative;
+    left: 140px;
+}
+
+.tree-grid .level-9 .indented {
+    position: relative;
+    left: 160px;
+}
+
+.tree-grid .tree-icon, .tree-label {
+    cursor: pointer;
+    position: relative;
+}
+
+.tree-label > span {
+    position: relative;
+}
+
+div.tree-grid-wrapper {
+    height: 100%;
+    width: 100%;
+    padding-bottom: 30px;
+}
+
+div.tree-grid-wrapper * {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+div.tree-grid-wrapper {
+    width: 100%;
+    height: 100%;
+}
+
+div.table-grid-header {
+    position: relative;
+    z-index: 1;
+    background-color: #eaeaea;
+    border: 1px solid rgb(156, 156, 156);
+    border-bottom: none;
+}
+
+input.tree-grid-header-checkbox {
+    float: left;
+    margin-left: 22px;
+    margin-top: 3px;
+}
+
+div.table-grid-header-rows {
+    position: relative;
+    overflow: hidden;
+    font-weight: bold;
+    background-color: inherit;
+    width: 100%;
+}
+
+div.table-grid-header-row {
+    position: absolute;
+    background-color: inherit;
+    border-bottom: 1px solid #d4d4d4;
+}
+
+div.table-grid-cell {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    overflow: hidden;
+    background-color: inherit;
+    padding: 5px;
+    cursor: pointer;
+    border-bottom: 1px solid #d4d4d4;
+    border-right: 1px solid #d4d4d4;
+}
+
+div.table-grid-header-row.even {
+    background-color: #f3f3f3;
+}
+
+div.table-grid-header-row.odd {
+    background-color: #fdfdfd;
+}
+
+div.table-grid-body {
+    width: 100%;
+    height: 100%;
+    padding-bottom: 30px;
+    overflow: auto;
+    border: 1px solid rgb(156, 156, 156);
+}
+
+div.table-grid-body-content {
+    position: relative;
+    height: 100%;
+}
+
+div.table-grid-body-row {
+    position: absolute;
+}
+
+div.table-grid-body-row.active > div {
+    background-color: rgb(221, 225, 255);
+}
+
+div.table-grid-body-row:hover >div {
+    background-color: #eeeeff;
+}
+
+div.table-grid-row-odd {
+    background-color: #f3f3f3;
+}
+
+div.table-grid-row-even {
+    background-color: #fdfdfd;
+}
+
+div.table-grid-header-row .resize {
+    cursor: col-resize;
+    width: 10px;
+    right: -5px;
+    top: 0;
+    height: 100%;
+    position: absolute;
+    background-color: transparent;
+}
+
+.table-grid-height {
+    height: 30px;
+}
+
+.tree-indent {
+    width: 17px;
+    display: inline-block;
+}
+
+/** end tree grid **/

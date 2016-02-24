@@ -1,0 +1,10 @@
+<div ng-style="cellStyle($index, $last, true)" class="table-grid-cell table-grid-height"
+     ng-repeat="col in colDefinitions">
+                        <span ng-show="multiSelect" ng-if="options.expandingProperty === col.field">
+                        <input type="checkbox" ng-checked="TreeControlService.isSelectedAll()"
+                               ng-click="TreeControlService.toggleCheckboxes($event);" class="tree-grid-header-checkbox"
+                               class="ec-hidden-checkbox"/>
+                        </span> <span>{{col.displayName | translate}}</span>
+    <div ng-show="options.colResize" class="resize"
+         ng-mousedown="TreeGeneralService.onColResizeStart($event, $index)"></div>
+</div>

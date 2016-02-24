@@ -1,0 +1,41 @@
+<div class="itable-tree">
+    <div ng-show="treeBranches.length > 0 && !isLoading" ng-style="options.excludeHeader ? {'padding-bottom': '0'} : {}"
+         class="tree-grid-wrapper tree-grid" id="tree-grid-{{$id}}">
+        <div ng-if="!options.excludeHeader" class="table-grid-header table-grid-height"
+             style="{{options.excludeBorder ? 'border:none; background-color: transparent' : ''}}">
+            <div class="table-grid-header-rows table-grid-height">
+                <div class="table-grid-header-row table-grid-height">
+                    <div class="tree-grid-header-tpl" ng-include="options.templateUrls.headerTemplateUrl"></div>
+                </div>
+            </div>
+        </div>
+        <div class="table-grid-body" ng-style="TreeGeneralService.tableStyle()">
+            <div class="table-grid-body-content">
+                <div ng-style="TreeGeneralService.getCanvasHeight()" class="table-grid-viewpoint">
+                    <div class="table-grid-body-row table-grid-height"
+                         ng-repeat="row in treeBranches track by row.branch.uid"
+                         ng-if="TreeGeneralService.isInViewport($index)" ng-style="TreeGeneralService.rowStyle($index)"
+                         ng-class="TreeGeneralService.rowClass($odd, row.branch.selected)"
+                         ng-style="{'width' : (col.width ?  col.width : defaultCellWidth)}"
+                         ng-click="TreeControlService.selectBranch($event, row.branch)"
+                         ng-init="TreeGeneralService.setRow(row.branch)"
+                         ng-switch="setSwitch(row.branch)">
+                        <div class="table-grid-row-tpl" ng-include="options.templateUrls.rowTemplateUrl"></div>
+                    </div>
+                    <div ng-if="loadMoreSign" ng-style="rowStyle(treeBranches.length)"
+                         style="width: 100%; text-align: center" class="table-grid-body-row table-grid-height"><img
+                            src="images/preloader.gif" height="30"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div ng-show="!treeBranches.length && !treeData.length && !isLoading" class="full-size">
+        <div class="ec-no-records">{{ noDataLabel | translate }}</div>
+    </div>
+    <div ng-show="!treeBranches.length && treeData.length && !isLoading" class="full-size">
+        <div class="ec-no-records">{{ (searchNotFoundLabel || noDataLabel) | translate }}</div>
+    </div>
+    <div ng-show="isLoading" class="full-size">
+        <div class="ec-no-records"><img src="images/preloader.gif" width="32" height="32"></div>
+    </div>
+    <div>

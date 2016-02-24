@@ -340,12 +340,25 @@
             return anyVisibleChildren;
         };
 
-
         //-----------------------------------------------------
         /**
          * TODO
          */
+        TreeGeneralService.prototype.tableStyle = function () {
+            var $scope = this.$scope;
+            var style = {};
+            if (scope.isFullWidth) {
+                style['overflow-x'] = 'hidden';
+            }
+            if (scope.options['excludeBorder']) {
+                style['border'] = 'none';
+            }
+            return style;
+        };
 
+        TreeGeneralService.prototype.getCanvasHeight = function () {
+            return {'height': scope.treeRowsFiltered.length * scope.defaultCellHeight, 'width': '100%'};
+        };
 
         TreeGeneralService.prototype.isInViewport = function (index) {
             var $scope = this.$scope;
