@@ -1,5 +1,10 @@
 'use strict';
 
+/**
+ * use of angular.module().constant
+ */
+
+
 (function () {
     angular.module('iTableTree').directive('iTableTree',
         ['$compile', '$http', '$interval', '$rootScope', '$timeout', '$window', 'TreeGeneralService', 'TreeControlService', 'UtilService', iTableTree]);
@@ -29,11 +34,6 @@
                  */
                 $scope.TreeControlService = new TreeControlService($scope);
 
-                /**
-                 *
-                 * @type {Array}
-                 */
-                $scope.treeBranches = [];
 
                 /**
                  * ****************** options ******************
@@ -52,10 +52,10 @@
                     /**
                      *
                      */
-                    templateUrls: {
-                        bodyTemplateUrl: 'itable-tree.tpl.html',
-                        rowTemplateUrl: '',
-                        headerTemplateUrl: ''
+                    templates: {
+                        mainTemplate: 'templates/itable-tree-main.tpl.html',
+                        rowTemplate: 'templates/itable-tree-row.tpl.html',
+                        headerTemplate: 'templates/itable-tree-header.tpl.html'
                     },
                     /**
                      *
@@ -190,19 +190,6 @@
                 $scope.viewportTop = 0;
                 $scope.viewportBottom = 0;
 
-                /**
-                 * ****************** watch tree changes ******************
-                 */
-
-                $scope.$watch('treeData', function () {
-                    $scope.treeBranches = [];
-                    //setViewport();
-                    angular.forEach($scope.treeData, function (branch) {
-                        if (branch._visible_) {
-                            $scope.treeBranches.push(branch);
-                        }
-                    });
-                });
 
                 /**
                  * ****************** tree container width settings ******************
@@ -231,8 +218,8 @@
                 $scope.keyCodeDown = function (event) {
                     $scope.keyCode = event.keyCode;
                 };
-                $(window).bind('keyup', $scope.keyCodeUp);
-                $(window).bind('keydown', $scope.keyCodeDown);
+                angular.element(window).bind('keyup', $scope.keyCodeUp);
+                angular.element(window).bind('keydown', $scope.keyCodeDown);
 
 
                 /**
@@ -240,7 +227,7 @@
                  * TODO: stop here, meeting time
                  */
 
-                var compileTemplate = function (rowTemplate, headerTemplate) {
+                var compileTemplate = function (templates) {
                     var headerCheckbox = '';
 
                     var content = '';
@@ -269,7 +256,6 @@
                         }
                     });
 
-                    scope.$watchCollection('treeData', scope.treeControl['onTreeDataChange']);
 
                     $timeout(function () {
                         $rootScope.$broadcast('tree.grid.created', scope.treeControl);
@@ -277,43 +263,26 @@
                     });
                 };
 
-                scope.$on('$destroy', function () {
-                    //if (intervalUpdate !== null) {
-                    $interval.cancel(intervalUpdate);
-                    //}
-
-                    //if (loadingInterval) {
-                    $interval.cancel(loadingInterval);
-                    //}
-
-                    //if (updateBufferTimer) {
-                    $timeout.cancel(updateBufferTimer);
-                    //}
-
-                    $(window).unbind('keyup', keyCodeUp);
-                    $(window).unbind('keydown', keyCodeDown);
+                $scope.$on('$destroy', function () {
+                    angular.element(window).unbind('keyup', keyCodeUp);
+                    angular.element(window).unbind('keydown', keyCodeDown);
                     angular.element('#tree-grid-' + scope['$id'] + ' .table-grid-body').off('scroll');
 
-                    _.each(scope.timers, function (timer) {
+                    angular.forEach($scope.timers, function (timer) {
                         $timeout.cancel(timer);
+                    });
+
+                    angular.forEach($scope.intervals, function (interval) {
+                        $interval.cancel(interval);
                     });
                 });
 
-                if (scope.headerTemplateUrl) {
-                    $http.get(scope.rowTemplateUrl)
-                        .success(function (rowTemplate) {
-                            $http.get(scope.headerTemplateUrl)
-                                .success(function (headerTemplate) {
-                                    compileTemplate(rowTemplate, headerTemplate);
-                                });
-                        });
-                } else {
-                    $http.get(scope.rowTemplateUrl)
-                        .success(function (rowTemplate) {
-                            compileTemplate(rowTemplate);
-                        });
-                }
 
+                var templates = [];
+                angular.forEach($scope.options.templates, function (template) {
+                    templates.push($templateCache.get(template));
+                });
+                compileTemplate(templates);
             }
         }
     }

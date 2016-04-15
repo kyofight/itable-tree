@@ -1,4 +1,11 @@
 <div class="itable-tree">
+
+    <div class="itree-tree-header-tpl" ng-include="options.templateUrls.headerTemplateUrl"></div>
+
+    <div class="itree-tree-body-content" ng-include="options.templateUrls.rowTemplateUrl"></div>
+
+</div>
+<!--
     <div ng-show="treeBranches.length > 0 && !isLoading" ng-style="options.excludeHeader ? {'padding-bottom': '0'} : {}"
          class="tree-grid-wrapper tree-grid" id="tree-grid-{{$id}}">
         <div ng-if="!options.excludeHeader" class="table-grid-header table-grid-height"
@@ -39,3 +46,5 @@
         <div class="ec-no-records"><img src="images/preloader.gif" width="32" height="32"></div>
     </div>
     <div>
+    </div>
+</div>

@@ -162,6 +162,7 @@
          * @param parent
          * @param level
          * @param visible
+         * @param expanded
          */
         TreeGeneralService.prototype.initBranch = function (branch, parent, level, visible, expanded) {
             var $scope = this.$scope;

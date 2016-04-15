@@ -1,3 +1,4 @@
+<!--
 <div ng-style="cellStyle($index, $last, true)" class="table-grid-cell table-grid-height"
      ng-repeat="col in colDefinitions">
                         <span ng-show="multiSelect" ng-if="options.expandingProperty === col.field">
@@ -8,3 +9,108 @@
     <div ng-show="options.colResize" class="resize"
          ng-mousedown="TreeGeneralService.onColResizeStart($event, $index)"></div>
 </div>
+-->
+
+
+<ul class="mm_table_list">
+    <li ng-repeat="col in colDefinitions" ng-style="cellStyle($index, $last, true)">
+                <span ng-show="multiSelect" ng-if="options.expandingProperty === col.field">
+                    <input type="checkbox" ng-checked="TreeControlService.isSelectedAll()"
+                           ng-click="TreeControlService.toggleCheckboxes($event);"
+                           class="tree-grid-header-checkbox"/>
+                </span>
+        <span>{{col.displayName | translate}}</span>
+        <div ng-show="options.colResize" class="table-grid-resize"
+             ng-mousedown="TreeGeneralService.onColResizeStart($event, $index)"></div>
+    </li>
+</ul>
+
+
+<div style="width:100%">
+    <!-- header -->
+    <div>
+        <ul class="mm_table_list">
+            <li ng-repeat="col in colDefinitions" ng-style="cellStyle($index, $last, true)">
+                <span ng-show="multiSelect" ng-if="options.expandingProperty === col.field">
+                    <input type="checkbox" ng-checked="TreeControlService.isSelectedAll()"
+                           ng-click="TreeControlService.toggleCheckboxes($event);"
+                           class="tree-grid-header-checkbox"/>
+                </span>
+                <span>{{col.displayName | translate}}</span>
+                <div ng-show="options.colResize" class="table-grid-resize"
+                     ng-mousedown="TreeGeneralService.onColResizeStart($event, $index)"></div>
+            </li>
+        </ul>
+    </div>
+    <!-- loading display -->
+    <div ng-show="!data.length && !loading">{{::t.LB_LOCATION_NO_DATA}}</div>
+
+    <div ui-tree="treeOptions"
+         ui-tree-nodes
+         ng-model="data">
+        <div ui-tree="treeOptions"
+             ui-tree-nodes
+             ng-model="data">
+            <div ng-repeat="node in data"
+                 ui-tree-node
+                 ng-include="'nodes_renderer'">
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/ng-template" id="nodes_renderer">
+    <ul class="mm_table_list" ui-tree-handle>
+        <li style="width: 47%">
+            <div ng-style="{'margin-left': 20*(depth()-1) + 'px'}">
+                <a class="btn btn-xs" ng-if="node.CategoryList && node.CategoryList.length > 0"
+                   data-nodrag
+                   ng-click="expanded[node.CategoryId] = !expanded[node.CategoryId];">
+                                      <span class="glyphicon" ng-class="{
+                                          'glyphicon-plus': !expanded[node.CategoryId],
+                                          'glyphicon-minus': expanded[node.CategoryId]
+                                          }">
+                                      </span>
+                </a>
+                <a class="btn btn-xs ng-scope" style="visibility: hidden"
+                   ng-if="!node.CategoryList || !node.CategoryList.length">
+                                            <span class="glyphicon glyphicon-plus">
+                                      </span></a>
+                <span>{{ ::node.CategoryName }}</span>
+            </div>
+        </li>
+        <li style="width: 18%; text-align: center;">{{ ::node.IsMerchCanSelect ? t.LB_YES :
+            t.LB_NO }}
+        </li>
+        <li style="width: 15%; text-align: center;">{{ ::node.SkuCount }}</li>
+        <li style="width: 10%">
+            <span class="label {{::CONSTANTS.STATUS_CSS[node.StatusId]}}">{{::CONSTANTS.STATUS_NAME[node.StatusId]}}</span>
+        </li>
+        <li style="width: 10%; min-width: 120px;" ng-mousedown="$event.stopPropagation();">
+            <select class="form-control"
+                    ng-init="node.rowAction = ''"
+                    ng-model="node.rowAction"
+                    ng-change="selectAction(node, this)">
+                <option value="">{{::t.LB_ACTIONS}}</option>
+                <option value="{{::CONSTANTS.ROWACTION.EDIT}}">{{::t.LB_EDIT}}</option>
+                ng-show="!node.SkuCount && (!node.CategoryList || !node.CategoryList.length)">
+                {{::t.LB_DELETE}}
+                </option>
+                <option value="{{::CONSTANTS.ROWACTION.CREATE_CATEGORY}}">
+                    {{::t.LB_AC_CREATE_SUB_CATEGORY}}
+                </option>
+            </select>
+        </li>
+    </ul>
+
+    <div ng-if="node.CategoryList && node.CategoryList.length > 0 && expanded.hasOwnProperty(node.CategoryId)"
+         ng-show="expanded[node.CategoryId]"
+         ui-tree-nodes=""
+         ng-model="node.CategoryList"
+         style="background: white; "
+    >
+        <div ng-repeat="node in node.CategoryList"
+             ui-tree-node
+             ng-include="'nodes_renderer'"></div>
+    </div>
+
+</script>

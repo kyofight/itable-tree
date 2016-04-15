@@ -1,0 +1,23 @@
+<!-- loading display -->
+<div ng-show="!data.length && !loading">{{::t.LB_LOCATION_NO_DATA}}</div>
+
+<div ng-repeat="node in data track by node.uid" ng-include="'itable-tree-node-template'"></div>
+
+
+<script type="text/ng-template" id="itable-tree-node-template">
+    <ul class="mm_table_list" >
+        <li ng-style="" ng-class="" ng-repeat="col in colDefs">
+            <div>
+                <a ng-if="expandingProperty === col.field && row.branch.anyChildren" >
+                    <i ng-style="levelStyle(row.level)" class="indented tree-icon tree-indent">&nbsp;</i>
+                </a>
+            </div>
+            <div ng-include="col.template"></div>
+        </li>
+    </ul>
+
+    <div ng-if="node.expanded && node[options.itemsLabel] && node[options.itemsLabel].length > 0">
+        <div ng-repeat="childNode in node[options.itemsLabel]"
+             ng-include="'itable-tree-node-template'"></div>
+    </div>
+</script>
