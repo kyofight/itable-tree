@@ -23,6 +23,7 @@
                 icons: '=',
                 treeControlService: '='
             },
+            templateUrl: 'itable/templates/itable-tree-main.tpl.html',
             link: function ($scope, element, attrs) {
                 /**
                  *
@@ -52,10 +53,9 @@
                     /**
                      *
                      */
-                    templates: {
-                        mainTemplate: 'templates/itable-tree-main.tpl.html',
-                        rowTemplate: 'templates/itable-tree-row.tpl.html',
-                        headerTemplate: 'templates/itable-tree-header.tpl.html'
+                    templateUrls: {
+                        header: 'itable/templates/itable-tree-header.tpl.html',
+                        row: 'itable/templates/itable-tree-row.tpl.html'
                     },
                     /**
                      *
@@ -222,47 +222,6 @@
                 angular.element(window).bind('keydown', $scope.keyCodeDown);
 
 
-                /**
-                 *
-                 * TODO: stop here, meeting time
-                 */
-
-                var compileTemplate = function (templates) {
-                    var headerCheckbox = '';
-
-                    var content = '';
-
-                    var contentElement = angular.element(content);
-                    element.html(contentElement);
-                    $compile(contentElement)(scope);
-
-
-                    $scope.$watch('treeBranches.length', function () {
-                        $timeout(function () {
-                            angular.element('#tree-grid-' + scope['$id'] + ' .table-grid-body').off('scroll');
-                            angular.element('#tree-grid-' + scope['$id'] + ' .table-grid-body').on('scroll', function () {
-                                var headerRow = $('#tree-grid-' + scope['$id'] + ' .table-grid-header-row');
-                                headerRow.css('left', -$(this).scrollLeft());
-                                //headerRow.scrollLeft($(this).scrollLeft());
-                                setViewport(true);
-                            });
-                        });
-                    });
-
-                    //select the tree nodes first if not empty
-                    _.each(scope.selectedBranches, function (branch) {
-                        if (branch && !branch['selected']) {
-                            selectBranch(branch, {'isMultiple': true});
-                        }
-                    });
-
-
-                    $timeout(function () {
-                        $rootScope.$broadcast('tree.grid.created', scope.treeControl);
-                        viewpointElement = angular.element('#tree-grid-' + scope['$id'] + ' .table-grid-body');
-                    });
-                };
-
                 $scope.$on('$destroy', function () {
                     angular.element(window).unbind('keyup', keyCodeUp);
                     angular.element(window).unbind('keydown', keyCodeDown);
@@ -278,11 +237,31 @@
                 });
 
 
-                var templates = [];
-                angular.forEach($scope.options.templates, function (template) {
-                    templates.push($templateCache.get(template));
+                $scope.$watch('treeBranches.length', function () {
+                    $timeout(function () {
+                        angular.element('#tree-grid-' + scope['$id'] + ' .table-grid-body').off('scroll');
+                        angular.element('#tree-grid-' + scope['$id'] + ' .table-grid-body').on('scroll', function () {
+                            var headerRow = $('#tree-grid-' + scope['$id'] + ' .table-grid-header-row');
+                            headerRow.css('left', -$(this).scrollLeft());
+                            //headerRow.scrollLeft($(this).scrollLeft());
+                            //setViewport(true);
+                        });
+                    });
                 });
-                compileTemplate(templates);
+
+                //select the tree nodes first if not empty
+                /**
+                _.each(scope.selectedBranches, function (branch) {
+                    if (branch && !branch['selected']) {
+                        selectBranch(branch, {'isMultiple': true});
+                    }
+                });
+
+                $timeout(function () {
+                    $rootScope.$broadcast('tree.grid.created', scope.treeControl);
+                    viewpointElement = angular.element('#tree-grid-' + scope['$id'] + ' .table-grid-body');
+                });
+                 **/
             }
         }
     }
