@@ -3,9 +3,9 @@
 var gulp = require('gulp'),
     templateCache = require('gulp-angular-templatecache'),
     minifyCSS = require('gulp-minify-css'),
-    less = require('less'),
+    less = require('gulp-less'),
     uglify = require('gulp-uglify'),
-    jshint = require('gulp-jshint');
+    eslint = require('gulp-eslint');
 
 var config = {
     dist: './dist',
@@ -20,7 +20,9 @@ gulp.task('templates', function () {
 
 gulp.task('js', function () {
     return gulp.src(config.src + '/*.js')
-        .pipe(jshint())
+        .pipe(eslint())
+        .pipe(eslint.format())
+        .pipe(eslint.failOnError())
         .pipe(uglify())
         .pipe(gulp.dest(config.dist));
 });
@@ -33,8 +35,8 @@ gulp.task('less', function () {
 });
 
 gulp.task('demo', function () {
-    return gulp.src(config.dist)
-        .pipe(gulp.dest('demo/dist/'))
+    return gulp.src(config.dist + '/*')
+        .pipe(gulp.dest('demo/dist'))
 });
 
 
