@@ -133,8 +133,8 @@
             var $scope = this.$scope;
             var self = this;
             angular.forEach(b[$scope.options.itemsLabel], function (c) {
-                callback(c, b);
-                if (deep && c[$scope.options.itemsLabel] && c[$scope.options.itemsLabel].length) {
+                var isBreak = callback(c, b);
+                if (deep && c[$scope.options.itemsLabel] && c[$scope.options.itemsLabel].length && !isBreak) {
                     self.forEachChild(c, callback, deep);
                 }
             });
@@ -166,19 +166,19 @@
          */
         TreeGeneralService.prototype.initBranch = function (branch, parent, level, visible, expanded) {
             var $scope = this.$scope;
-            branch.uid = $scope.options.modelKey ? branch[$scope.options.modelKey] : UtilService.generateUUID();
-            branch.pid = parent ? parent.uid : '';
+            branch._uid = $scope.options.modelKey ? branch[$scope.options.modelKey] : UtilService.generateUUID();
+            branch._pid = parent ? parent._uid : '';
             branch._level = level;
             branch._expanded = expanded === undefined ? level < $scope.options.expandLevel : expanded;
             branch._visible = !parent ? true : parent._visible;
             branch._visible_ = !parent ? true : visible;
-            branch.prototype.label = $scope.callbacks.getBranchLabel ? $scope.callbacks.getBranchLabel : function () {
+            branch.getLabel = $scope.callbacks.getBranchLabel ? $scope.callbacks.getBranchLabel() : function () {
                 return this.model[$scope.options.label];
             };
-            branch.prototype.treeIcon = function () {
+            branch.getTreeIcon = function () {
                 return this._expanded ? $scope.icons.iconCollapse : $scope.icons.iconExpand;
             };
-            branch.prototype.getParent = function () {
+            branch.getParent = function () {
                 return parent;
             };
 
@@ -194,7 +194,7 @@
             var $scope = this.$scope;
             var self = this;
 
-            $scope.forEachBranch(function (branch, parent, level, visible) {
+            this.forEachBranch(function (branch, parent, level, visible) {
                 self.initBranch(branch, parent, level, visible);
             });
 
@@ -323,22 +323,21 @@
             $event.stopPropagation();
         };
 
-        TreeGeneralService.prototype.anyVisibleChildren = function (branch) {
+        TreeGeneralService.prototype.hasVisibleChildren = function (branch) {
             var $scope = this.$scope;
             if (!branch[$scope.options.itemsLabel] || !branch[$scope.options.itemsLabel].length) {
-                branch.anyChildren = true;
+                branch._hasChildren = false;
                 return false;
             }
-            //1 level traverse only
-            var anyVisibleChildren = false;
-            angular.forEach(branch[$scope.options.itemsLabel], function (item) {
-                if (item.visible_) {
-                    anyVisibleChildren = true;
+
+            for (var i=0; i<branch[$scope.options.itemsLabel].length; i++) {
+                if (branch[$scope.options.itemsLabel][i]._visible_ && branch[$scope.options.itemsLabel][i]._visible) {
+                    branch._hasChildren = true;
                     return true;
                 }
-            });
-            branch.anyChildren = !anyVisibleChildren;
-            return anyVisibleChildren;
+            }
+
+            return false;
         };
 
         //-----------------------------------------------------

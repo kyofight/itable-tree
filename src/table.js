@@ -7,9 +7,9 @@
 
 (function () {
     angular.module('iTableTree').directive('iTableTree',
-        ['$compile', '$http', '$interval', '$rootScope', '$timeout', '$window', 'TreeGeneralService', 'TreeControlService', 'UtilService', iTableTree]);
+        ['$interval', '$timeout', 'TreeGeneralService', 'TreeControlService', 'UtilService', iTableTree]);
 
-    function iTableTree($compile, $http, $interval, $rootScope, $timeout, $window, TreeGeneralService, TreeControlService, UtilService) {
+    function iTableTree($interval, $timeout, TreeGeneralService, TreeControlService, UtilService) {
 
         return {
             restrict: 'E',
@@ -53,9 +53,10 @@
                     /**
                      *
                      */
-                    templateUrls: {
-                        header: 'itable/templates/itable-tree-header.tpl.html',
-                        row: 'itable/templates/itable-tree-row.tpl.html'
+                    templateIds: {
+                        main: 'itable-tree-main.tpl.html',
+                        header: 'itable-tree-header.tpl.html',
+                        row: 'itable-tree-row.tpl.html'
                     },
                     /**
                      *

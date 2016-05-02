@@ -20,6 +20,18 @@
                     return false;
                 }
             }
+
+            var notSelected = false;
+
+            TreeGeneralService.forEachChild(branch, function (c, p) {
+                if (c._visible_ && !c.selected) {
+
+                }
+
+
+            }, true);
+
+
             return true;
         };
 
@@ -179,6 +191,7 @@
             return parent;
         };
 
+        /**
         TreeControlService.prototype.addBranch = function (branches, parent, isExpandParents) {
             var $scope = this.$scope;
             (function appendChildren (branches, parent) {
@@ -205,6 +218,7 @@
             }
             TreeGeneralService.applyTreeFilter();
         };
+         **/
 
         TreeControlService.prototype.toggleExpansion = function (branch, flag) {
             branch.expanded = flag === undefined ? !branch.expanded : flag;
