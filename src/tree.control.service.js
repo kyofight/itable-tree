@@ -13,39 +13,26 @@
         }
 
         TreeControlService.prototype.isSelectedAll = function () {
-            var $scope = this.$scope;
-
-            for (var i = 0; i < $scope.treeBranches.length; i++) {
-                if (!$scope.treeBranches[i].branch.selected) {
-                    return false;
-                }
-            }
-
             var notSelected = false;
-
-            TreeGeneralService.forEachChild(branch, function (c, p) {
-                if (c._visible_ && !c.selected) {
-
+            this.forEachBranch(function (branch) {
+                if (!branch._selected && branch._visible_) {
+                    notSelected = false;
                 }
-
-
-            }, true);
-
-
-            return true;
+                return notSelected;
+            });
+            return notSelected;
         };
 
-        TreeControlService.prototype.clearAllSelection = function ($event, branch) {
+        TreeControlService.prototype.clearAllSelection = function () {
             var $scope = this.$scope;
-            angular.forEach($scope.selectedBranches, function (b) {
-                if (b) {
-                    b.selected = false;
+            angular.forEach($scope.selectedBranches, function(branch) {
+                if (branch) {
+                    branch._selected = false;
                 }
             });
+
+            //todo: before filter, clear all selected branches
             $scope.selectedBranches = {};
-            if ($scope.callbacks.beforeShiftKey) {
-                $scope.callbacks.beforeShiftKey($event, branch, $scope.lastSelectedBranch);
-            }
         };
 
         TreeControlService.prototype._selectBranch = function (branch, data) {
@@ -58,35 +45,21 @@
                 data = {'isMultiple': false};
             }
 
-            //expandAllParents(branch);
-            if (data['isMultiple']) {
-                branch['selected'] = !branch['selected'];
-                if (!branch['selected']) {
-                    $scope.selectedBranches[branch['uid']] = null;
+            if (data.isMultiple) {
+                branch._selected = !branch._selected;
+                if (!branch._selected && $scope.selectedBranches[branch._uid]) {
+                    delete $scope.selectedBranches[branch._uid];
                 } else {
-                    $scope.selectedBranches[branch['uid']] = branch;
+                    $scope.selectedBranches[branch._uid] = branch;
                 }
             } else {
-                _.each($scope.selectedBranches, function (b) {
-                    if (b) {
-                        b['selected'] = false;
-                    }
-                });
-                $scope.selectedBranches = {};
-                branch['selected'] = true;
-                $scope.selectedBranches[branch['uid']] = branch;
+                this.clearAllSelection();
+                branch._selected = true;
+                $scope.selectedBranches[branch._uid] = branch;
             }
 
-            if (branch['onSelect'] !== undefined) {
-                return $timeout(function () {
-                    return branch['onSelect'](branch, data);
-                });
-            } else if (!data['silentSelect']) {
-                if ($scope.onSelect() !== undefined) {
-                    return $timeout(function () {
-                        return ($scope.onSelect())(branch, data);
-                    });
-                }
+            if (angular.isFunction($scope.options.callbacks.onSelectBranch)) {
+                $scope.options.callbacks.onSelectBranch(branch, data);
             }
         };
 
@@ -101,20 +74,20 @@
                 $event.stopPropagation();
             }
 
-            var isMultiple = $scope.multiSelect;
+            var isMultiple = $scope.options.multiSelect;
 
             //Firefox: 224
             //Opera: 17
             //WebKit (Safari/Chrome): 91 (Left Apple) or 93 (Right Apple)
-            if ($event.ctrlKey || (isMac && ($scope.keyCode === 224 && isFirefox) || ($scope.keyCode === 17 && isOpera) ||
-                (($scope.keyCode === 91 || $scope.keyCode === 93) && isWebKit))) {
-                isMultiple = $scope.allowMultiple;
+            if ($event.ctrlKey || (isMac && (($scope.keyCode === 224 && isFirefox) || ($scope.keyCode === 17 && isOpera) ||
+                (($scope.keyCode === 91 || $scope.keyCode === 93) && isWebKit)))) {
+                isMultiple = $scope.options.allowMultiple;
             }
             if ($event.shiftKey) {
-                isMultiple = $scope.allowMultiple;
+                isMultiple = $scope.options.allowMultiple;
             } else {
                 //record last selected item, use pageY to determine if up or down
-                branch.pageY = $event.pageY;
+                branch._pageY = $event.pageY;
                 $scope.lastSelectedBranch = branch;
             }
 
@@ -123,33 +96,42 @@
 
             if ($event.shiftKey) {
                 if (!$scope.lastSelectedBranch) {
-                    $scope.lastSelectedBranch = this.getFirstBranch();
-                    $scope.lastSelectedBranch.pageY = -1;
+                    $scope.lastSelectedBranch = branch;
+                    return;
                 }
-                if ($scope.lastSelectedBranch) {
-                    var nextBranch = $event.pageY < $scope.lastSelectedBranch.pageY ? this.getPrevBranch : this.getNextBranch;
-                    var b = nextBranch($scope.lastSelectedBranch);
-                    if ($scope.lastSelectedBranch.uid === branch.uid) {
-                        this.clearAllSelection($event, branch);
+
+                /**
+                 * stop here 5-11
+                 */
+                this.forEachBranch(function (branch) {
+                    if (!branch._selected && branch._visible && branch._visible_) {
+                        notSelected = false;
+                    }
+                    return notSelected;
+                });
+
+                var nextBranch = $event.pageY < $scope.lastSelectedBranch.pageY ? this.getPrevBranch : this.getNextBranch;
+                var b = nextBranch($scope.lastSelectedBranch);
+                if ($scope.lastSelectedBranch._uid === branch._uid) {
+                    this.clearAllSelection($event, branch);
+                    this._selectBranch(branch, data);
+                } else if (b) {
+                    this.clearAllSelection($event, branch);
+                    //select anchor
+                    if (!$scope.lastSelectedBranch.selected) {
+                        this._selectBranch($scope.lastSelectedBranch, data);
+                    }
+                    while (b && b._uid !== branch._uid) {
+                        this._selectBranch(b, data);
+                        b = nextBranch(b);
+                    }
+                    //select target
+                    if (!branch.selected) {
                         this._selectBranch(branch, data);
-                    } else if (b) {
-                        this.clearAllSelection($event, branch);
-                        //select anchor
-                        if (!$scope.lastSelectedBranch.selected) {
-                            this._selectBranch($scope.lastSelectedBranch, data);
-                        }
-                        while (b && b.uid !== branch.uid) {
-                            this._selectBranch(b, data);
-                            b = nextBranch(b);
-                        }
-                        //select target
-                        if (!branch.selected) {
-                            this._selectBranch(branch, data);
-                        }
                     }
-                    if ($scope.callbacks.afterShiftKey) {
-                        $scope.callbacks.afterShiftKey($event, branch, $scope.lastSelectedBranch);
-                    }
+                }
+                if ($scope.callbacks.afterShiftKey) {
+                    $scope.callbacks.afterShiftKey($event, branch, $scope.lastSelectedBranch);
                 }
             } else {
                 return this._selectBranch(branch, data);
@@ -163,6 +145,7 @@
             var $scope = this.$scope;
             var self = this;
             var action = $event.target.checked;
+            //todo: add partial select status, if it is partial selected, then toggle to select all?
             angular.forEach($scope.treeBranches, function (branch) {
                 if (branch.selected !== action) {
                     self.selectBranch({}, branch, {isMultiple: true});
@@ -182,7 +165,7 @@
             var parent = null;
             if (child.pid) {
                 for (var i = 0; i < $scope.treeBranches.length; i++) {
-                    if ($scope.treeBranches[i].uid === child.pid) {
+                    if ($scope.treeBranches[i]._uid === child.pid) {
                         parent = $scope.treeBranches[i];
                         break;
                     }

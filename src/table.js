@@ -15,7 +15,6 @@
             restrict: 'E',
             replace: true,
             scope: {
-                multiSelect: '=',
                 treeData: '=',
                 colDefs: '=',
                 callbacks: '=',
@@ -58,6 +57,10 @@
                         header: 'itable-tree-header.tpl.html',
                         row: 'itable-tree-row.tpl.html'
                     },
+
+                    allowMultiple: true,
+
+                    multiSelectOn: false,
                     /**
                      *
                      */
@@ -97,7 +100,11 @@
                     /**
                      * is the tree fit to container width
                      */
-                    isFitTreeContainer: true
+                    isFitTreeContainer: true,
+                    /**
+                     * is disable selection
+                     */
+                    disableSelection: false
                 };
 
                 /**

@@ -6,7 +6,9 @@
 
         $stateProvider
             .state('home', {
-                url: ''
+                url: '',
+                templateUrl: 'views/home.html',
+                controller: 'HomeController'
             })
     });
 })();
