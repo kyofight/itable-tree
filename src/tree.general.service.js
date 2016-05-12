@@ -117,19 +117,18 @@
          */
         TreeGeneralService.prototype.forEachBranch = function (callback) {
             var $scope = this.$scope;
-            var index = 0;
-            (function walkTree(data, parent, visible) {
+            (function walkTree(data, parent) {
                 angular.forEach(data, function (branch) {
-                    var isBreak = callback(branch, parent, visible, index);
+                    var isBreak = callback(branch, parent);
                     if (!isBreak) {
                         if (!angular.isArray(data[$scope.options.itemsLabel])) {
                             data[$scope.options.itemsLabel] = [];
                         } else if (data[$scope.options.itemsLabel].length) {
-                            walkTree(data[$scope.options.itemsLabel], data, (visible || !parent) && branch._expanded);
+                            walkTree(data[$scope.options.itemsLabel], data);
                         }
                     }
                 });
-            })($scope.treeData, null, true);
+            })($scope.treeData, null);
         };
 
         TreeGeneralService.prototype.forEachChild = function (b, callback, deep) {
@@ -163,23 +162,16 @@
          *
          * @param branch
          * @param parent
-         * @param visible
-         * @param index
          */
-        TreeGeneralService.prototype.initBranch = function (branch, parent, visible, index) {
-            //the index for ng-repeat is node in nodes => nodes[$index - 1]
-            //1. find prev siblings, if yes, then p+1
-            //2. if no, then find parent, if yes, then parent + 1
-            //3. if no, then 0
-
+        TreeGeneralService.prototype.initBranch = function (branch, parent) {
             var $scope = this.$scope;
             branch._uid = $scope.options.modelKey ? branch[$scope.options.modelKey] : UtilService.generateUUID();
             branch._pid = parent ? parent._uid : '';
             branch._level = parent ? parent._level : 0;
-            branch._index = index;
-            branch._expanded = expanded === undefined ? branch._level < $scope.options.expandLevel : expanded;
-            branch._visible = !parent ? true : parent._visible;
-            branch._visible_ = !parent ? true : visible;
+            //branch._index = !parent ? ;
+            branch._expanded = typeof branch._expanded === 'undefined' ? branch._level < $scope.options.expandLevel : branch._expanded;
+            branch._visible = !parent ? branch._visible : parent._visible && parent._expanded;
+
             branch.getLabel = $scope.callbacks.getBranchLabel ? $scope.callbacks.getBranchLabel() : function () {
                 return this.model[$scope.options.label];
             };
@@ -191,11 +183,27 @@
             };
 
             branch.getNextBranch = function () {
-                return parent;
+                if (parent) {
+                    if (parent[branch._index + 1]) {
+                        return parent[branch._index + 1];
+                    } else {
+                        return parent;
+                    }
+                } else {
+                    return $scope.treeData[branch._index + 1];
+                }
             };
 
             branch.getPrevBranch = function () {
-                return parent;
+                if (parent) {
+                    if (parent[branch._index - 1]) {
+                        return parent[branch._index - 1];
+                    } else {
+                        return parent;
+                    }
+                } else {
+                    return $scope.treeData[branch._index - 1];
+                }
             };
 
             if ($scope.callbacks.initBranch) {
@@ -211,14 +219,14 @@
 
 
         TreeGeneralService.prototype.init = function () {
-            var $scope = this.$scope;
             var self = this;
 
-            this.forEachBranch(function (branch, parent, visible, index) {
-                self.initBranch(branch, parent, visible, index);
+            this.applyTreeFilter();
+
+            this.forEachBranch(function (branch, parent) {
+                self.initBranch(branch, parent);
             });
 
-            this.applyTreeFilter();
             this.applyTreeSort();
         };
 

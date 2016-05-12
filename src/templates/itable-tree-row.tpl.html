@@ -12,6 +12,7 @@
                     <i ng-style="levelStyle(row.level)" class="indented tree-icon tree-indent">&nbsp;</i>
                 </a>
             </div>
+            <!-- todo: use directive, as ng-include has performance issue -->
             <div ng-include="col.template"></div>
         </li>
     </ul>

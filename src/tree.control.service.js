@@ -23,16 +23,42 @@
             return notSelected;
         };
 
-        TreeControlService.prototype.clearAllSelection = function () {
+        TreeControlService.prototype.toggleAllSelection = function (branch, isSelected) {
             var $scope = this.$scope;
-            angular.forEach($scope.selectedBranches, function(branch) {
-                if (branch) {
-                    branch._selected = false;
-                }
-            });
 
-            //todo: before filter, clear all selected branches
-            $scope.selectedBranches = {};
+            if (branch) {
+                if ($scope.selectedBranches[branch._uid]) {
+                    $scope.selectedBranches[branch._uid]._selected = isSelected;
+                    if (isSelected) {
+                        $scope.selectedBranches[branch._uid]._selected = true;
+                    } else {
+                        delete $scope.selectedBranches[branch._uid];
+                    }
+                }
+
+                angular.forEach(branch[$scope.options.itemsLabel], function (branch) {
+                    if ($scope.selectedBranches[branch._uid]) {
+                        $scope.selectedBranches[branch._uid]._selected = isSelected;
+                        if (isSelected) {
+                            $scope.selectedBranches[branch._uid]._selected = true;
+                        } else {
+                            delete $scope.selectedBranches[branch._uid];
+                        }
+                    }
+                })
+            } else {
+                angular.forEach($scope.selectedBranches, function (branch) {
+                    if (branch) {
+                        branch._selected = isSelected;
+                        if (isSelected) {
+                            $scope.selectedBranches[branch._uid]._selected = true;
+                        }
+                    }
+                });
+
+                //todo: before filter, clear all selected branches
+                $scope.selectedBranches = {};
+            }
         };
 
         TreeControlService.prototype._selectBranch = function (branch, data) {
@@ -53,7 +79,7 @@
                     $scope.selectedBranches[branch._uid] = branch;
                 }
             } else {
-                this.clearAllSelection();
+                this.toggleAllSelection();
                 branch._selected = true;
                 $scope.selectedBranches[branch._uid] = branch;
             }
@@ -100,54 +126,38 @@
                     return;
                 }
 
-                /**
-                 * stop here 5-11
-                 */
-                this.forEachBranch(function (branch) {
-                    if (!branch._selected && branch._visible && branch._visible_) {
-                        notSelected = false;
-                    }
-                    return notSelected;
-                });
-
-                var nextBranch = $event.pageY < $scope.lastSelectedBranch.pageY ? this.getPrevBranch : this.getNextBranch;
-                var b = nextBranch($scope.lastSelectedBranch);
+                var nextBranchCall = $event.pageY < $scope.lastSelectedBranch._pageY ? 'getPrevBranch' : 'getNextBranch';
+                var b = branch[nextBranchCall]();
                 if ($scope.lastSelectedBranch._uid === branch._uid) {
-                    this.clearAllSelection($event, branch);
+                    this.toggleAllSelection(branch);
                     this._selectBranch(branch, data);
                 } else if (b) {
-                    this.clearAllSelection($event, branch);
+                    this.toggleAllSelection(branch);
                     //select anchor
-                    if (!$scope.lastSelectedBranch.selected) {
+                    if (!$scope.lastSelectedBranch._selected) {
                         this._selectBranch($scope.lastSelectedBranch, data);
                     }
                     while (b && b._uid !== branch._uid) {
                         this._selectBranch(b, data);
-                        b = nextBranch(b);
+                        b = b[nextBranchCall]();
                     }
                     //select target
-                    if (!branch.selected) {
+                    if (!branch._selected) {
                         this._selectBranch(branch, data);
                     }
                 }
-                if ($scope.callbacks.afterShiftKey) {
-                    $scope.callbacks.afterShiftKey($event, branch, $scope.lastSelectedBranch);
-                }
             } else {
-                return this._selectBranch(branch, data);
+                this._selectBranch(branch, data);
             }
         };
 
-        /**
-         * TODO: stop here, bed time
-         */
         TreeControlService.prototype.toggleCheckboxes = function ($event) {
             var $scope = this.$scope;
             var self = this;
             var action = $event.target.checked;
             //todo: add partial select status, if it is partial selected, then toggle to select all?
-            angular.forEach($scope.treeBranches, function (branch) {
-                if (branch.selected !== action) {
+            angular.forEach($scope.treeData, function (branch) {
+                if (branch._selected !== action) {
                     self.selectBranch({}, branch, {isMultiple: true});
                 }
             });
@@ -160,53 +170,10 @@
 
         };
 
-        TreeControlService.prototype.getParentBranch = function (child) {
-            var $scope = this.$scope;
-            var parent = null;
-            if (child.pid) {
-                for (var i = 0; i < $scope.treeBranches.length; i++) {
-                    if ($scope.treeBranches[i]._uid === child.pid) {
-                        parent = $scope.treeBranches[i];
-                        break;
-                    }
-                }
-            }
-            return parent;
-        };
-
-        /**
-        TreeControlService.prototype.addBranch = function (branches, parent, isExpandParents) {
-            var $scope = this.$scope;
-            (function appendChildren (branches, parent) {
-                angular.forEach(branches, function (branch) {
-                    TreeGeneralService.initBranch(branch, parent, parent._level + 1, parent._visible_, isExpandParents);
-                    if (branch[$scope.options.itemsLabel] && branch[$scope.options.itemsLabel].length) {
-                        appendChildren(branch[$scope.options.itemsLabel], parent);
-                    }
-                });
-            })(branches, parent);
-            parent[$scope.options.itemsLabel] = parent[$scope.options.itemsLabel].concat(branches);
-            parent[$scope.options.itemsLabel].sort($scope.callbacks.treeSort);
-
-            if (isExpandParents) {
-                var p;
-                parent = true;
-                TreeGeneralService.forEachChild(parent);
-                while(p = parent.getParentBranch()) {
-                    p.expanded = true;
-                    TreeGeneralService.forEachChild(p, function (c, p) {
-                        c._visible_ = p._visible_ && p.expanded && c.visible_;
-                    });
-                }
-            }
-            TreeGeneralService.applyTreeFilter();
-        };
-         **/
-
         TreeControlService.prototype.toggleExpansion = function (branch, flag) {
-            branch.expanded = flag === undefined ? !branch.expanded : flag;
+            branch._expanded = typeof flag === 'undefined' ? !branch._expanded : flag;
             TreeGeneralService.forEachChild(branch, function (c, p) {
-                c._visible_ = p._visible_ && p.expanded && branch.expanded && c.visible_;
+                c._visible_ = p._visible_ && p._expanded && branch._expanded && c._visible;
             });
         };
 
