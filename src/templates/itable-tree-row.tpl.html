@@ -5,15 +5,14 @@
 
 
 <script type="text/ng-template" id="itable-tree-node-template">
-    <ul class="mm_table_list" >
+    <ul class="mm_table_list" ng-init="TreeGeneralService.initBranch(node, $index)">
         <li ng-style="" ng-class="" ng-repeat="col in colDefs">
             <div>
-                <a ng-if="expandingProperty === col.field && row.branch.anyChildren" >
-                    <i ng-style="levelStyle(row.level)" class="indented tree-icon tree-indent">&nbsp;</i>
+                <a ng-if="expandingProperty === col.field && TreeGeneralService.hasVisibleChildren(node)" >
+                    <i ng-style="TreeGeneralService.levelStyle(node._level)" class="indented tree-icon tree-indent">&nbsp;</i>
                 </a>
             </div>
-            <!-- todo: use directive, as ng-include has performance issue -->
-            <div ng-include="col.template"></div>
+            <div><i-table-tree-column-template template="col.template"></i-table-tree-column-template></div>
         </li>
     </ul>
 
